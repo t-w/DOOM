@@ -29,16 +29,7 @@ rcsid[] = "$Id: i_x.c,v 1.6 1997/02/03 22:45:10 b1 Exp $";
 #include <sys/ipc.h>
 #include <sys/shm.h>
 
-#include <X11/Xlib.h>
-#include <X11/Xutil.h>
-#include <X11/keysym.h>
-
-#include <X11/extensions/XShm.h>
-// Had to dig up XShm.c for this one.
-// It is in the libXext, but not in the XFree86 headers.
-#ifdef LINUX
-int XShmGetEventBase( Display* dpy ); // problems with g++?
-#endif
+#include <SDL/SDL.h>
 
 #include <stdarg.h>
 #include <sys/time.h>
@@ -59,23 +50,10 @@ int XShmGetEventBase( Display* dpy ); // problems with g++?
 
 #define POINTER_WARP_COUNTDOWN	1
 
-Display*	X_display=0;
-Window		X_mainWindow;
-Colormap	X_cmap;
-Visual*		X_visual;
-GC		X_gc;
-XEvent		X_event;
-int		X_screen;
-XVisualInfo	X_visualinfo;
-XImage*		image;
+SDL_Surface     *screen;
 int		X_width;
 int		X_height;
 
-// MIT SHared Memory extension.
-boolean		doShm;
-
-XShmSegmentInfo	X_shminfo;
-int		X_shmeventtype;
 
 // Fake mouse handling.
 // This cannot work properly w/o DGA.
@@ -91,88 +69,89 @@ static int	multiply=1;
 
 
 //
-//  Translates the key currently in X_event
+//  Translates the key currently in -X_event- SDL_Event
 //
 
-int xlatekey(void)
+int xlatekey(SDL_Event *sdl_event)
 {
-
     int rc;
+//    SDL_KeyboardEvent keyboard_event;
 
-    switch(rc = XKeycodeToKeysym(X_display, X_event.xkey.keycode, 0))
-    {
-      case XK_Left:	rc = KEY_LEFTARROW;	break;
-      case XK_Right:	rc = KEY_RIGHTARROW;	break;
-      case XK_Down:	rc = KEY_DOWNARROW;	break;
-      case XK_Up:	rc = KEY_UPARROW;	break;
-      case XK_Escape:	rc = KEY_ESCAPE;	break;
-      case XK_Return:	rc = KEY_ENTER;		break;
-      case XK_Tab:	rc = KEY_TAB;		break;
-      case XK_F1:	rc = KEY_F1;		break;
-      case XK_F2:	rc = KEY_F2;		break;
-      case XK_F3:	rc = KEY_F3;		break;
-      case XK_F4:	rc = KEY_F4;		break;
-      case XK_F5:	rc = KEY_F5;		break;
-      case XK_F6:	rc = KEY_F6;		break;
-      case XK_F7:	rc = KEY_F7;		break;
-      case XK_F8:	rc = KEY_F8;		break;
-      case XK_F9:	rc = KEY_F9;		break;
-      case XK_F10:	rc = KEY_F10;		break;
-      case XK_F11:	rc = KEY_F11;		break;
-      case XK_F12:	rc = KEY_F12;		break;
-	
-      case XK_BackSpace:
-      case XK_Delete:	rc = KEY_BACKSPACE;	break;
+    switch( rc = sdl_event->key.keysym.sym ) {
+    case SDLK_LEFT:     rc = KEY_LEFTARROW;	break;
+    case SDLK_RIGHT:	rc = KEY_RIGHTARROW;	break;
+    case SDLK_DOWN:	rc = KEY_DOWNARROW;	break;
+    case SDLK_UP:	rc = KEY_UPARROW;	break;
+    case SDLK_ESCAPE:	rc = KEY_ESCAPE;	break;
+    case SDLK_RETURN:	rc = KEY_ENTER;		break;
+    case SDLK_TAB:	rc = KEY_TAB;		break;
+    case SDLK_F1:	rc = KEY_F1;		break;
+    case SDLK_F2:	rc = KEY_F2;		break;
+    case SDLK_F3:	rc = KEY_F3;		break;
+    case SDLK_F4:	rc = KEY_F4;		break;
+    case SDLK_F5:	rc = KEY_F5;		break;
+    case SDLK_F6:	rc = KEY_F6;		break;
+    case SDLK_F7:	rc = KEY_F7;		break;
+    case SDLK_F8:	rc = KEY_F8;		break;
+    case SDLK_F9:	rc = KEY_F9;		break;
+    case SDLK_F10:	rc = KEY_F10;		break;
+    case SDLK_F11:	rc = KEY_F11;		break;
+    case SDLK_F12:	rc = KEY_F12;		break;
 
-      case XK_Pause:	rc = KEY_PAUSE;		break;
+    case SDLK_BACKSPACE:
+    case SDLK_DELETE:	rc = KEY_BACKSPACE;	break;
 
-      case XK_KP_Equal:
-      case XK_equal:	rc = KEY_EQUALS;	break;
+    case SDLK_PAUSE:	rc = KEY_PAUSE;		break;
 
-      case XK_KP_Subtract:
-      case XK_minus:	rc = KEY_MINUS;		break;
+    case SDLK_KP_EQUALS:
+    case SDLK_EQUALS:	rc = KEY_EQUALS;	break;
 
-      case XK_Shift_L:
-      case XK_Shift_R:
+    case SDLK_KP_MINUS:
+    case SDLK_MINUS:	rc = KEY_MINUS;		break;
+
+    case SDLK_LSHIFT:
+    case SDLK_RSHIFT:
 	rc = KEY_RSHIFT;
 	break;
 	
-      case XK_Control_L:
-      case XK_Control_R:
+    case SDLK_LCTRL:
+    case SDLK_RCTRL:
 	rc = KEY_RCTRL;
 	break;
 	
-      case XK_Alt_L:
-      case XK_Meta_L:
-      case XK_Alt_R:
-      case XK_Meta_R:
+    case SDLK_LALT:
+    case SDLK_LMETA:
+    case SDLK_RALT:
+    case SDLK_RMETA:
 	rc = KEY_RALT;
 	break;
-	
-      default:
-	if (rc >= XK_space && rc <= XK_asciitilde)
-	    rc = rc - XK_space + ' ';
-	if (rc >= 'A' && rc <= 'Z')
-	    rc = rc - 'A' + 'a';
-	break;
+        
+    default:
+        //printf ("Key: %d\n", rc);
+	if (rc >= SDLK_SPACE && rc <= SDLK_BACKQUOTE)
+	    rc = rc - SDLK_SPACE + ' ';
+        else //if (rc >= 'A' && rc <= 'Z')
+            //rc = rc - 'A' + 'a';
+            if ( rc >= SDLK_a && rc <= SDLK_z )
+                rc += 'a' - SDLK_a;
+	break;        
     }
 
     return rc;
-
 }
 
 void I_ShutdownGraphics(void)
 {
   // Detach from X server
-  if (!XShmDetach(X_display, &X_shminfo))
-	    I_Error("XShmDetach() failed in I_ShutdownGraphics()");
+//  if (!XShmDetach(X_display, &X_shminfo))
+//	    I_Error("XShmDetach() failed in I_ShutdownGraphics()");
 
   // Release shared memory.
-  shmdt(X_shminfo.shmaddr);
-  shmctl(X_shminfo.shmid, IPC_RMID, 0);
+//  shmdt(X_shminfo.shmaddr);
+//  shmctl(X_shminfo.shmid, IPC_RMID, 0);
 
   // Paranoia.
-  image->data = NULL;
+  //image->data = NULL;
 }
 
 
@@ -192,7 +171,42 @@ boolean		mousemoved = false;
 boolean		shmFinished;
 
 void I_GetEvent(void)
-{
+{    
+    SDL_Event sdl_event;
+    event_t event;
+
+    //printf("I_GetEvent(): Calling SDL_PollEvent()\n");
+    SDL_PollEvent(&sdl_event);
+
+    switch(sdl_event.type){  /* Process the appropiate event type */
+    case SDL_KEYDOWN:
+        event.type = ev_keydown;
+	event.data1 = xlatekey(&sdl_event);
+	D_PostEvent(&event);
+	// fprintf(stderr, "k");
+	break;
+
+    case SDL_KEYUP:
+	event.type = ev_keyup;
+	event.data1 = xlatekey(&sdl_event);
+	D_PostEvent(&event);
+	// fprintf(stderr, "ku");
+	break;
+
+    case SDL_QUIT:
+        // additionally - quit if eg. window close event
+        //printf("Quitting...\n");
+        //exit(1);
+        I_Quit();
+
+    default:/* Report an unhandled event */
+        printf("Unimplemented event: %d\n", event.type);
+    }
+
+    //printf("I_GetEvent(): leaving...\n");
+
+
+/*  X11 version - xdoom  orig.
 
     event_t event;
 
@@ -276,31 +290,8 @@ void I_GetEvent(void)
 	break;
     }
 
-}
+*/
 
-Cursor
-createnullcursor
-( Display*	display,
-  Window	root )
-{
-    Pixmap cursormask;
-    XGCValues xgc;
-    GC gc;
-    XColor dummycolour;
-    Cursor cursor;
-
-    cursormask = XCreatePixmap(display, root, 1, 1, 1/*depth*/);
-    xgc.function = GXclear;
-    gc =  XCreateGC(display, cursormask, GCFunction, &xgc);
-    XFillRectangle(display, cursormask, gc, 0, 0, 1, 1);
-    dummycolour.pixel = 0;
-    dummycolour.red = 0;
-    dummycolour.flags = 04;
-    cursor = XCreatePixmapCursor(display, cursormask, cursormask,
-				 &dummycolour,&dummycolour, 0,0);
-    XFreePixmap(display,cursormask);
-    XFreeGC(display,gc);
-    return cursor;
 }
 
 //
@@ -308,33 +299,26 @@ createnullcursor
 //
 void I_StartTic (void)
 {
+    Uint32 mask;
 
-    if (!X_display)
-	return;
+    // SDL
+    if (!screen)
+        return;
 
-    while (XPending(X_display))
-	I_GetEvent();
+    // Process all input events
 
-    // Warp the pointer back to the middle of the window
-    //  or it will wander off - that is, the game will
-    //  loose input focus within X11.
-    if (grabMouse)
-    {
-	if (!--doPointerWarp)
-	{
-	    XWarpPointer( X_display,
-			  None,
-			  X_mainWindow,
-			  0, 0,
-			  0, 0,
-			  X_width/2, X_height/2);
-
-	    doPointerWarp = POINTER_WARP_COUNTDOWN;
-	}
+    SDL_PumpEvents();
+    mask = ( SDL_EVENTMASK( SDL_KEYDOWN ) |
+             SDL_EVENTMASK( SDL_KEYUP ) |
+             SDL_EVENTMASK( SDL_ACTIVEEVENT ) |
+             SDL_EVENTMASK( SDL_QUIT ) );
+    
+    while ( SDL_PeepEvents( NULL, 1, SDL_PEEKEVENT, mask ) ) {
+        I_GetEvent();
     }
 
-    mousemoved = false;
 
+    mousemoved = false;  // check if needed
 }
 
 
@@ -385,7 +369,7 @@ void I_FinishUpdate (void)
 
 	ilineptr = (unsigned int *) (screens[0]);
 	for (i=0 ; i<2 ; i++)
-	    olineptrs[i] = (unsigned int *) &image->data[i*X_width];
+            olineptrs[i] = (unsigned int *) &screen->pixels[i*X_width];
 
 	y = SCREENHEIGHT;
 	while (y--)
@@ -412,7 +396,7 @@ void I_FinishUpdate (void)
 		*olineptrs[1]++ = twoopixels;
 #endif
 	    } while (x-=4);
-	    olineptrs[0] += X_width/4;
+	    olineptrs[0] += X_width/4; 
 	    olineptrs[1] += X_width/4;
 	}
 
@@ -427,8 +411,9 @@ void I_FinishUpdate (void)
 
 	ilineptr = (unsigned int *) (screens[0]);
 	for (i=0 ; i<3 ; i++)
-	    olineptrs[i] = (unsigned int *) &image->data[i*X_width];
+            olineptrs[i] = (unsigned int *) &screen->pixels[i*X_width];
 
+        
 	y = SCREENHEIGHT;
 	while (y--)
 	{
@@ -477,47 +462,13 @@ void I_FinishUpdate (void)
     {
 	// Broken. Gotta fix this some day.
 	void Expand4(unsigned *, double *);
-  	Expand4 ((unsigned *)(screens[0]), (double *) (image->data));
+        // update for SDL
+  	//Expand4 ((unsigned *)(screens[0]), (double *) (image->data));
     }
 
-    if (doShm)
-    {
-
-	if (!XShmPutImage(	X_display,
-				X_mainWindow,
-				X_gc,
-				image,
-				0, 0,
-				0, 0,
-				X_width, X_height,
-				True ))
-	    I_Error("XShmPutImage() failed\n");
-
-	// wait for it to finish and processes all input events
-	shmFinished = false;
-	do
-	{
-	    I_GetEvent();
-	} while (!shmFinished);
-
-    }
-    else
-    {
-
-	// draw the image
-	XPutImage(	X_display,
-			X_mainWindow,
-			X_gc,
-			image,
-			0, 0,
-			0, 0,
-			X_width, X_height );
-
-	// sync up with server
-	XSync(X_display, False);
-
-    }
-
+    // draw the image
+    //SDL_UpdateRect(screen, 0, 0, screen->w, screen->h);
+    SDL_Flip(screen);
 }
 
 
@@ -533,47 +484,35 @@ void I_ReadScreen (byte* scr)
 //
 // Palette stuff.
 //
-static XColor	colors[256];
+SDL_Color colors[256];
 
-void UploadNewPalette(Colormap cmap, byte *palette)
+void UploadNewPalette(byte *palette)
 {
 
     register int	i;
     register int	c;
     static boolean	firstcall = true;
-
+/*
 #ifdef __cplusplus
     if (X_visualinfo.c_class == PseudoColor && X_visualinfo.depth == 8)
 #else
     if (X_visualinfo.class == PseudoColor && X_visualinfo.depth == 8)
 #endif
-	{
-	    // initialize the colormap
-	    if (firstcall)
-	    {
-		firstcall = false;
-		for (i=0 ; i<256 ; i++)
-		{
-		    colors[i].pixel = i;
-		    colors[i].flags = DoRed|DoGreen|DoBlue;
-		}
-	    }
+*/
 
-	    // set the X colormap entries
-	    for (i=0 ; i<256 ; i++)
-	    {
-		c = gammatable[usegamma][*palette++];
-		colors[i].red = (c<<8) + c;
-		c = gammatable[usegamma][*palette++];
-		colors[i].green = (c<<8) + c;
-		c = gammatable[usegamma][*palette++];
-		colors[i].blue = (c<<8) + c;
-	    }
+    // set the X colormap entries
+    for (i=0 ; i<256 ; i++)
+    {
+        c = gammatable[usegamma][*palette++];
+        colors[i].r = (c<<8) + c;
+        c = gammatable[usegamma][*palette++];
+        colors[i].g = (c<<8) + c;
+        c = gammatable[usegamma][*palette++];
+        colors[i].b = (c<<8) + c;
+    }
 
-	    // store the colors to the current colormap
-	    XStoreColors(X_display, cmap, colors, 256);
-
-	}
+    // store the colors to the current colormap
+    SDL_SetPalette(screen, SDL_LOGPAL|SDL_PHYSPAL, colors, 0, 256);
 }
 
 //
@@ -581,7 +520,7 @@ void UploadNewPalette(Colormap cmap, byte *palette)
 //
 void I_SetPalette (byte* palette)
 {
-    UploadNewPalette(X_cmap, palette);
+    UploadNewPalette(palette);
 }
 
 
@@ -666,7 +605,7 @@ void grabsharedmemory(int size)
       id = shmget((key_t)key, size, IPC_CREAT|0777);
       if (id==-1)
       {
-	//extern int errno;
+        //extern int errno;
 	fprintf(stderr, "errno=%d\n", errno);
 	I_Error("Could not get any shared memory");
       }
@@ -680,6 +619,9 @@ void grabsharedmemory(int size)
 	    "shared memory segments.\n");
     }	
   
+
+/*  change to SDL
+
   X_shminfo.shmid = id;
   
   // attach to the shared memory segment
@@ -687,6 +629,8 @@ void grabsharedmemory(int size)
   
   fprintf(stderr, "shared memory id=%d, addr=0x%x\n", id,
 	  (int) (image->data));
+
+*/
 }
 
 void I_InitGraphics(void)
@@ -705,11 +649,12 @@ void I_InitGraphics(void)
     
     int			oktodraw;
     unsigned long	attribmask;
-    XSetWindowAttributes attribs;
-    XGCValues		xgcvalues;
+
     int			valuemask;
     static int		firsttime=1;
 
+    Uint32              sdl_vmode_flags;
+    
     if (!firsttime)
 	return;
     firsttime = 0;
@@ -756,8 +701,41 @@ void I_InitGraphics(void)
 	    I_Error("bad -geom parameter");
     }
 
+    // initialize SDL
+    SDL_Init(SDL_INIT_VIDEO);
+
+    /* Clean up on exit */
+    atexit(SDL_Quit);
+    
+    //int screen_size_x = SCREENWIDTH, //320,
+    //    screen_size_y = SCREENHEIGHT; //200;
+
+    int fullscreen = M_CheckParm("-fs") || M_CheckParm("-fullscreen");
+    
+    sdl_vmode_flags = SDL_DOUBLEBUF | SDL_HWACCEL | SDL_HWPALETTE | SDL_HWSURFACE |
+        ( fullscreen ? SDL_FULLSCREEN : 0 );
+
+    screen = SDL_SetVideoMode(X_width, X_height, //screen_size_x, screen_size_y,
+                              // SDL_DOUBLEBUF | SDL_HWACCEL | SDL_HWPALETTE | SDL_FULLSCREEN );
+                              8, sdl_vmode_flags );
+    //    screen = SDL_SetVideoMode( screen_size_x, screen_size_y,
+    //                       eob_screen_depth,SDL_HWACCEL|
+//                             /*SDL_SWSURFACE*/SDL_HWSURFACE|SDL_HWPALETTE);
+
+    
+    if ( screen == NULL ) {
+        fprintf(stderr, "Couldn't set %dx%dx8 video mode: %s\n",
+                X_width, X_height, //screen_size_x, screen_size_y,
+                SDL_GetError());
+        //exit(1);
+        I_Quit();
+    }
+
+    if (fullscreen)
+        SDL_ShowCursor(SDL_DISABLE);
+    
     // open the display
-    X_display = XOpenDisplay(displayname);
+    /*X_display = XOpenDisplay(displayname);
     if (!X_display)
     {
 	if (displayname)
@@ -768,14 +746,25 @@ void I_InitGraphics(void)
 
     // use the default visual 
     X_screen = DefaultScreen(X_display);
-    if (!XMatchVisualInfo(X_display, X_screen, 8, PseudoColor, &X_visualinfo))
-	I_Error("xdoom currently only supports 256-color PseudoColor screens");
-    X_visual = X_visualinfo.visual;
+
+    XVisualInfo *debugInfo1 = XGetVisualInfo(X_display,
+                                             vinfo_mask,
+                                             vinfo_template,
+                                             nitems_return)
+      Display *display;
+      long vinfo_mask;
+      XVisualInfo *vinfo_template;
+      int *nitems_return;
+    */
+    //if (!XMatchVisualInfo(X_display, X_screen, 8, PseudoColor, &X_visualinfo))
+    //I_Error("xdoom currently only supports 256-color PseudoColor screens");
+    //X_visual = X_visualinfo.visual;
 
     // check for the MITSHM extension
-    doShm = XShmQueryExtension(X_display);
+    //doShm = XShmQueryExtension(X_display);
 
     // even if it's available, make sure it's a local connection
+    /*
     if (doShm)
     {
 	if (!displayname) displayname = (char *) getenv("DISPLAY");
@@ -786,15 +775,20 @@ void I_InitGraphics(void)
 	    if (*d) *d = 0;
 	    if (!(!strcasecmp(displayname, "unix") || !*displayname)) doShm = false;
 	}
-    }
+        } */
 
     fprintf(stderr, "Using MITSHM extension\n");
 
     // create the colormap
-    X_cmap = XCreateColormap(X_display, RootWindow(X_display,
-						   X_screen), X_visual, AllocAll);
+    /* - update to SDL
+      X_cmap = XCreateColormap( X_display,
+                              RootWindow( X_display, X_screen ),
+                              X_visual,
+                              AllocAll );
+    */
 
     // setup attributes for main window
+    /*  -> change to SDL
     attribmask = CWEventMask | CWColormap | CWBorderPixel;
     attribs.event_mask =
 	KeyPressMask
@@ -802,9 +796,9 @@ void I_InitGraphics(void)
 	// | PointerMotionMask | ButtonPressMask | ButtonReleaseMask
 	| ExposureMask;
 
-    attribs.colormap = X_cmap;
+    //attribs.colormap = X_cmap;   -> do for SDL
     attribs.border_pixel = 0;
-
+    
     // create the main window
     X_mainWindow = XCreateWindow(	X_display,
 					RootWindow(X_display, X_screen),
@@ -816,10 +810,11 @@ void I_InitGraphics(void)
 					X_visual,
 					attribmask,
 					&attribs );
-
-    XDefineCursor(X_display, X_mainWindow,
-		  createnullcursor( X_display, X_mainWindow ) );
-
+    */
+//X11 version only
+//    XDefineCursor(X_display, X_mainWindow,
+//		  createnullcursor( X_display, X_mainWindow ) );
+/*
     // create the GC
     valuemask = GCGraphicsExposures;
     xgcvalues.graphics_exposures = False;
@@ -849,7 +844,8 @@ void I_InitGraphics(void)
 		     ButtonPressMask|ButtonReleaseMask|PointerMotionMask,
 		     GrabModeAsync, GrabModeAsync,
 		     X_mainWindow, None, CurrentTime);
-
+*/
+    /*  
     if (doShm)
     {
 
@@ -906,12 +902,12 @@ void I_InitGraphics(void)
     				X_width );
 
     }
+*/
 
     if (multiply == 1)
-	screens[0] = (unsigned char *) (image->data);
+        screens[0] = (unsigned char *) (screen->pixels);
     else
 	screens[0] = (unsigned char *) malloc (SCREENWIDTH * SCREENHEIGHT);
-
 }
 
 

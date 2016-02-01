@@ -6,10 +6,13 @@
 #
 CC=  gcc  # gcc or g++
 
-CFLAGS=-m32 -g -Wall -DNORMALUNIX -DLINUX # -DUSEASM
+SDL_CFLAGS=`sdl-config --cflags`
+SDL_LIBS=`sdl-config --libs`
+
+CFLAGS=-m32 -g -Wall -DNORMALUNIX -DLINUX $(SDL_CFLAGS) # -DUSEASM
 #LDFLAGS=-L/usr/X11R6/lib
 LDFLAGS=-L/usr/lib/i386-linux-gnu
-LIBS=-lXext -lX11 -lnsl -lm
+LIBS=-lXext -lX11 -lnsl -lm $(SDL_LIBS)
 
 # subdirectory for objects
 O=linux
@@ -78,15 +81,15 @@ OBJS=				\
 		$(O)/info.o				\
 		$(O)/sounds.o
 
-all:	 $(O)/linuxxdoom
+all:	 $(O)/sdldoom
 
 clean:
 	rm -f *.o *~ *.flc
 	rm -f linux/*
 
-$(O)/linuxxdoom:	$(OBJS) $(O)/i_main.o
+$(O)/sdldoom:	$(OBJS) $(O)/i_main.o
 	$(CC) $(CFLAGS) $(LDFLAGS) $(OBJS) $(O)/i_main.o \
-	-o $(O)/linuxxdoom $(LIBS)
+	-o $(O)/sdldoom $(LIBS)
 
 $(O)/%.o:	%.c
 	$(CC) $(CFLAGS) -c $< -o $@
