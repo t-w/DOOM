@@ -8,10 +8,12 @@
 
 CC=gcc
 #CFLAGS=-O -DNORMALUNIX -DLINUX
-CFLAGS=-m32 -g -Wall -O -DNORMALUNIX -DLINUX
+SDL_CFLAGS=`sdl-config --cflags`
+CFLAGS=-m32 -g -Wall -O -DNORMALUNIX -DLINUX $(SDL_CFLAGS)
 #LDFLAGS=
 LDFLAGS=-L/usr/lib/i386-linux-gnu
-LIBS=-lm
+SDL_LIBS=`sdl-config --libs` -lSDL_mixer
+LIBS=-lm $(SDL_LIBS)
 
 O=linux
 
@@ -26,12 +28,12 @@ $(O)/sndserver: \
 	$(O)/soundsrv.o \
 	$(O)/sounds.o \
 	$(O)/wadread.o \
-	$(O)/linux.o
+	$(O)/sdl.o
 	$(CC) $(CFLAGS) $(LDFLAGS) \
 	$(O)/soundsrv.o \
 	$(O)/sounds.o \
 	$(O)/wadread.o \
-	$(O)/linux.o -o $(O)/sndserver $(LIBS)
+	$(O)/sdl.o -o $(O)/sndserver $(LIBS)
 	echo make complete.
 
 # Rule
