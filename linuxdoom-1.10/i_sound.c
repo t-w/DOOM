@@ -750,13 +750,15 @@ I_InitSound()
     sprintf(buffer, "./%s", sndserver_filename);
   
   // start sound process
+  sndserver = NULL;
   if ( !access(buffer, X_OK) )
   {
     strcat(buffer, " -quiet");
     sndserver = popen(buffer, "w");
   }
-  else
+  if (sndserver == NULL)
     fprintf(stderr, "Could not start sound server [%s]\n", buffer);
+
 #else
     
   int i;
