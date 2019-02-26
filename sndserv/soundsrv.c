@@ -560,6 +560,7 @@ main
 		    }
 		    else
 		    {
+                        int i;
 			if (snd_verbose)
 			    fprintf(stderr, "cmd: %c", commandbuf[0]);
 
@@ -575,22 +576,8 @@ main
 				fprintf(stderr, "%s\n", commandbuf);
 			    }
 
-			    commandbuf[0] -=
-				commandbuf[0]>='a' ? 'a'-10 : '0';
-			    commandbuf[1] -=
-				commandbuf[1]>='a' ? 'a'-10 : '0';
-			    commandbuf[2] -=
-				commandbuf[2]>='a' ? 'a'-10 : '0';
-			    commandbuf[3] -=
-				commandbuf[3]>='a' ? 'a'-10 : '0';
-			    commandbuf[4] -=
-				commandbuf[4]>='a' ? 'a'-10 : '0';
-			    commandbuf[5] -=
-				commandbuf[5]>='a' ? 'a'-10 : '0';
-			    commandbuf[6] -=
-				commandbuf[6]>='a' ? 'a'-10 : '0';
-			    commandbuf[7] -=
-				commandbuf[7]>='a' ? 'a'-10 : '0';
+                            for ( i = 0 ; i <= 7; i++ )
+                                commandbuf[ i ] -= commandbuf[ i ] >= 'a' ? 'a'-10 : '0';
 
 			    //	p<snd#><step><vol><sep>
 			    sndnum = (commandbuf[0]<<4) + commandbuf[1];
