@@ -39,13 +39,22 @@
 #define MIXBUFFERSIZE	(SAMPLECOUNT*2*2)
 #define SPEED			11025
 
+//#define SOUND_CHANNELS 16
 
 void I_InitMusic(void);
 
-void
+//void
+int
 I_InitSound
 ( int		samplerate,
-  int		samplesound );
+  int		samplesound,
+  int           number_of_sounds );
+
+
+void
+I_LoadSound( int n,
+             void *data,
+             int length );
 
 void
 I_SubmitOutputBuffer

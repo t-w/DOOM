@@ -140,78 +140,6 @@ static void derror(char* msg)
     exit(-1);
 }
 
-int mix(void)
-{
-
-    register int		dl;
-    register int		dr;
-    register unsigned int	sample;
-    
-    signed short*		leftout;
-    signed short*		rightout;
-    signed short*		leftend;
-    
-    int				step;
-
-    leftout = mixbuffer;
-    rightout = mixbuffer+1;
-    step = 2;
-
-    leftend = mixbuffer + SAMPLECOUNT*step;
-
-    // mix into the mixing buffer
-    while (leftout != leftend)
-    {
-        int i;
-        
-	dl = 0;
-	dr = 0;
-
-        for ( i = 0 ; i <= 7 ; i++ )
-            if ( channels[ i ] )
-            {
-                sample                     = *channels[ i ];
-                dl                        += channelleftvol_lookup[ i ][ sample ];
-                dr                        += channelrightvol_lookup[ i ][ sample ];
-                channelstepremainder[ i ] += channelstep[ i ];
-                channels[ i ]             += channelstepremainder[ i ] >> 16;
-                channelstepremainder[ i ] &= 65536 - 1;
-
-                if ( channels[ i ] >= channelsend[ i ] )
-                     channels[ i ] = 0;
-            }
-
-	// Has been char instead of short.
-	// if (dl > 127) *leftout = 127;
-	// else if (dl < -128) *leftout = -128;
-	// else *leftout = dl;
-
-	// if (dr > 127) *rightout = 127;
-	// else if (dr < -128) *rightout = -128;
-	// else *rightout = dr;
-	
-	if (dl > 0x7fff)
-	    *leftout = 0x7fff;
-	else if (dl < -0x8000)
-	    *leftout = -0x8000;
-	else
-	    *leftout = dl;
-
-	if (dr > 0x7fff)
-	    *rightout = 0x7fff;
-	else if (dr < -0x8000)
-	    *rightout = -0x8000;
-	else
-	    *rightout = dr;
-
-	leftout += step;
-	rightout += step;
-
-    }
-    return 1;
-}
-
-
 
 void
 grabdata
@@ -255,15 +183,15 @@ grabdata
     //	  derror("Please set $HOME to your home directory");
     //	sprintf(basedefault, "%s/.doomrc", home);
 
-
+/*
     for (i=1 ; i<c ; i++)
     {
-	if (!strcmp(v[i], "-quiet"))
-	{
-	    snd_verbose = 0;
-	}
+        if (!strcmp(v[i], "-quiet"))
+        {
+            snd_verbose = 0;
+        }
     }
-
+*/
     numsounds = NUMSFX;
     longsound = 0;
 
@@ -292,16 +220,20 @@ grabdata
     if (snd_verbose)
 	fprintf(stderr, "loading from [%s]\n", name);
 
-    for (i=1 ; i<NUMSFX ; i++)
+    for ( i = 1 ; i < NUMSFX ; i++ )
     {
-	if (!S_sfx[i].link)
+	if ( ! S_sfx[ i ].link )
 	{
-	    S_sfx[i].data = getsfx(S_sfx[i].name, &lengths[i]);
-	    if (longsound < lengths[i]) longsound = lengths[i];
+	    S_sfx[ i ].data = getsfx( S_sfx[ i ].name, &lengths[ i ] );
+	    if ( longsound < lengths[ i ] )
+                longsound = lengths[ i ];
 	} else {
-	    S_sfx[i].data = S_sfx[i].link->data;
-	    lengths[i] = lengths[(S_sfx[i].link - S_sfx)/sizeof(sfxinfo_t)];
+	    S_sfx[ i ].data = S_sfx[ i ].link->data;
+	    lengths[ i ]    = lengths[( S_sfx[ i ].link - S_sfx ) / sizeof( sfxinfo_t ) ];
 	}
+
+        I_LoadSound( i, S_sfx[ i ].data, lengths[ i ] );
+
 	// test only
 	//  {
 	//  int fd;
@@ -320,132 +252,20 @@ static struct timeval		last={0,0};
 
 static struct timezone		whocares;
 
-void updatesounds(void)
-{
 
-    mix();
-    I_SubmitOutputBuffer(mixbuffer, SAMPLECOUNT);
-
-}
+extern int I_SDL_Play_Sound( int sound, int volume );
 
 int
-addsfx
-( int		sfxid,
-  int		volume,
-  int		step,
-  int		seperation )
+addsfx( int sfxid,
+        int volume,
+        int step,
+        int seperation )
 {
-    static unsigned short	handlenums = 0;
- 
-    int		i;
-    int		rc = -1;
-    
-    int		oldest = mytime;
-    int		oldestnum = 0;
-    int		slot;
-    int		rightvol;
-    int		leftvol;
+    I_SDL_Play_Sound( sfxid, volume );
 
-    // play these sound effects
-    //  only one at a time
-    if ( sfxid == sfx_sawup
-	 || sfxid == sfx_sawidl
-	 || sfxid == sfx_sawful
-	 || sfxid == sfx_sawhit
-	 || sfxid == sfx_stnmov
-	 || sfxid == sfx_pistol )
-    {
-	for (i=0 ; i<8 ; i++)
-	{
-	    if (channels[i] && channelids[i] == sfxid)
-	    {
-		channels[i] = 0;
-		break;
-	    }
-	}
-    }
-
-    for (i=0 ; i<8 && channels[i] ; i++)
-    {
-	if (channelstart[i] < oldest)
-	{
-	    oldestnum = i;
-	    oldest = channelstart[i];
-	}
-    }
-
-    if (i == 8)
-	slot = oldestnum;
-    else
-	slot = i;
-
-    channels[slot] = (unsigned char *) S_sfx[sfxid].data;
-    channelsend[slot] = channels[slot] + lengths[sfxid];
-
-    if (!handlenums)
-	handlenums = 100;
-    
-    channelhandles[slot] = rc = handlenums++;
-    channelstep[slot] = step;
-    channelstepremainder[slot] = 0;
-    channelstart[slot] = mytime;
-
-    // (range: 1 - 256)
-    seperation += 1;
-
-    // (x^2 seperation)
-    leftvol =
-	volume - (volume*seperation*seperation)/(256*256);
-
-    seperation = seperation - 257;
-
-    // (x^2 seperation)
-    rightvol =
-	volume - (volume*seperation*seperation)/(256*256);	
-
-    // sanity check
-    if (rightvol < 0 || rightvol > 127)
-	derror("rightvol out of bounds");
-    
-    if (leftvol < 0 || leftvol > 127)
-	derror("leftvol out of bounds");
-    
-    // get the proper lookup table piece
-    //  for this volume level
-    channelleftvol_lookup[slot] = &vol_lookup[leftvol*256];
-    channelrightvol_lookup[slot] = &vol_lookup[rightvol*256];
-
-    channelids[slot] = sfxid;
-
-    return rc;
-
+    return 0;   // (returned value is a "handle" - not used)
 }
 
-
-void outputushort(int num)
-{
-
-    static unsigned char	buff[5] = { 0, 0, 0, 0, '\n' };
-    static char*		badbuff = "xxxx\n";
-
-    // outputs a 16-bit # in hex or "xxxx" if -1.
-    if (num < 0)
-    {
-	write(1, badbuff, 5);
-    }
-    else
-    {
-	buff[0] = num>>12;
-	buff[0] += buff[0] > 9 ? 'a'-10 : '0';
-	buff[1] = (num>>8) & 0xf;
-	buff[1] += buff[1] > 9 ? 'a'-10 : '0';
-	buff[2] = (num>>4) & 0xf;
-	buff[2] += buff[2] > 9 ? 'a'-10 : '0';
-	buff[3] = num & 0xf;
-	buff[3] += buff[3] > 9 ? 'a'-10 : '0';
-	write(1, buff, 5);
-    }
-}
 
 void initdata(void)
 {
@@ -520,16 +340,15 @@ main
     int		i;
     int		waitingtofinish=0;
 
+
+    I_InitSound(11025, 16, NUMSFX);
+    I_InitMusic();
+
     // get sound data
     grabdata(c, v);
 
     // init any data
-    initdata();		
-
-    I_InitSound(11025, 16);
-
-    I_InitMusic();
-
+    initdata();
     if (snd_verbose)
 	fprintf(stderr, "ready\n");
     
@@ -538,7 +357,7 @@ main
     FD_SET(0, &fdset);
 
     while (!done)
-    {
+    {   
 	mytime++;
 
 	if (!waitingtofinish)
@@ -580,11 +399,11 @@ main
                                 commandbuf[ i ] -= commandbuf[ i ] >= 'a' ? 'a'-10 : '0';
 
 			    //	p<snd#><step><vol><sep>
-			    sndnum = (commandbuf[0]<<4) + commandbuf[1];
-			    step = (commandbuf[2]<<4) + commandbuf[3];
-			    step = steptable[step];
-			    vol = (commandbuf[4]<<4) + commandbuf[5];
-			    sep = (commandbuf[6]<<4) + commandbuf[7];
+			    sndnum = ( commandbuf[ 0 ] << 4 ) + commandbuf[ 1 ];
+			    step   = ( commandbuf[ 2 ] << 4 ) + commandbuf[ 3 ];
+			    step   = steptable[ step ];
+			    vol    = ( commandbuf[ 4 ] << 4 ) + commandbuf[ 5 ];
+			    sep    = ( commandbuf[ 6 ] << 4 ) + commandbuf[ 7 ];
 
 			    handle = addsfx(sndnum, vol, step, sep);
 			    // returns the handle
@@ -622,17 +441,17 @@ main
 		}
 	    } while (rc > 0);
 	}
+/*
+        updatesounds();
 
-	updatesounds();
-
-	if (waitingtofinish)
-	{
-	    for(i=0 ; i<8 && !channels[i] ; i++);
-	    
-	    if (i==8)
-		done=1;
-	}
-
+       if (waitingtofinish)
+       {
+           for(i=0 ; i<8 && !channels[i] ; i++);
+           
+           if (i==8)
+               done=1;
+       }
+*/
     }
 
     quit();

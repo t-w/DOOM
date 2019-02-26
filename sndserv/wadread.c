@@ -227,6 +227,14 @@ loadlump
 
 }
 
+//#pragma pack (1)
+typedef struct dmx {
+    unsigned char three;
+    unsigned short rate;
+    unsigned short size;
+} dmx_hdr;
+
+
 void*
 getsfx
 ( char*		sfxname,
@@ -240,17 +248,27 @@ getsfx
     int			paddedsize;
     char		name[20];
 
+    dmx_hdr *hdr;
+
     sprintf(name, "ds%s", sfxname);
-
+    printf("Reading %s\n", name);
+    
     sfx = (unsigned char *) loadlump(name, &size);
-
+    printf("Done reading %s\n", name);
     // pad the sound effect out to the mixing buffer size
-    paddedsize = ((size-8 + (SAMPLECOUNT-1)) / SAMPLECOUNT) * SAMPLECOUNT;
-    paddedsfx = (unsigned char *) realloc(sfx, paddedsize+8);
-    for (i=size ; i<paddedsize+8 ; i++)
-	paddedsfx[i] = 128;
+//    paddedsize = ((size-8 + (SAMPLECOUNT-1)) / SAMPLECOUNT) * SAMPLECOUNT;
+//    paddedsfx = (unsigned char *) realloc(sfx, paddedsize+8);
+//    for (i=size ; i<paddedsize+8 ; i++)
+//	paddedsfx[i] = 128;
+    if ( hdr = (dmx_hdr *) sfx )
+        printf("%d, %d, %d \n", hdr->three, hdr->rate, hdr->size);
+    //for (paddedsfx = sfx, i=0; i< 20 ; i++, paddedsfx++)
+    //    printf("%d %c\n", *paddedsfx, *paddedsfx);
+//	paddedsfx[i] = 128;
 
-    *len = paddedsize;
-    return (void *) (paddedsfx + 8);
+//    *len = paddedsize;
+//    return (void *) (paddedsfx + 8);
 
+    *len = size;
+    return (void *) (sfx);
 }
