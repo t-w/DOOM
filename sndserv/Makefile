@@ -38,6 +38,7 @@ $(O)/sndserver: \
 
 # Rule
 $(O)/%.o: %.c
+	mkdir -pv ${O}
 	$(CC) $(CFLAGS) -c $< -o $@
 
 
