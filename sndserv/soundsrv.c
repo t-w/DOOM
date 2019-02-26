@@ -356,7 +356,7 @@ main
     FD_ZERO(&fdset);
     FD_SET(0, &fdset);
 
-    while (!done)
+    do
     {   
 	mytime++;
 
@@ -411,7 +411,7 @@ main
 			    break;
 			    
 			  case 'q':
-			    read(0, commandbuf, 1);
+                            read(0, commandbuf, 1);
 			    waitingtofinish = 1; rc = 0;
 			    break;
 			    
@@ -452,7 +452,8 @@ main
                done=1;
        }
 */
-    }
+    } while ( ! //done
+                waitingtofinish );
 
     quit();
     return 0;
