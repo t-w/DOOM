@@ -88,10 +88,12 @@ clean:
 	rm -f linux/*
 
 $(O)/sdldoom:	$(OBJS) $(O)/i_main.o
+	mkdir -pv ${O}
 	$(CC) $(CFLAGS) $(LDFLAGS) $(OBJS) $(O)/i_main.o \
 	-o $(O)/sdldoom $(LIBS)
 
 $(O)/%.o:	%.c
+	mkdir -pv ${O}
 	$(CC) $(CFLAGS) -c $< -o $@
 
 #############################################################
