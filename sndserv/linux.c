@@ -37,6 +37,7 @@ static const char rcsid[] = "$Id: linux.c,v 1.3 1997/01/26 07:45:01 b1 Exp $";
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <errno.h>
@@ -80,8 +81,7 @@ I_InitSound
                 
     audio_fd = open("/dev/dsp", O_WRONLY);
     if (audio_fd<0)
-        fprintf(stderr, "Could not open /dev/dsp\n");
-         
+        fprintf( stderr, "Could not open /dev/dsp, reason: %s\n", strerror( errno ) );
                      
     i = 11 | (2<<16);                                           
     myioctl(audio_fd, SNDCTL_DSP_SETFRAGMENT, &i);
