@@ -52,27 +52,7 @@ static const char rcsid[] = "$Id: linux.c,v 1.3 1997/01/26 07:45:01 b1 Exp $";
 static int NUMSFX = 0;
 Mix_Chunk **audio_mix_chunks = NULL;
 
-/*
-int	audio_fd;
 
-void
-myioctl
-( int	fd,
-  int	command,
-  int*	arg )
-{   
-    int		rc;
-    //extern int	errno;
-    
-    rc = ioctl(fd, command, arg);  
-    if (rc < 0)
-    {
-	fprintf(stderr, "ioctl(dsp,%d,arg) failed\n", command);
-	fprintf(stderr, "errno=%d\n", errno);
-	exit(-1);
-    }
-}
-*/
 void I_InitMusic(void)
 {
 }
@@ -86,28 +66,6 @@ I_InitSound
   int	samplesize,
   int   number_of_sounds)
 {
-/*
-    int i;
-
-    audio_fd = open("/dev/dsp", O_WRONLY);
-    if (audio_fd<0)
-        fprintf( stderr, "Could not open /dev/dsp, reason: %s\n", strerror( errno ) );
-                     
-    i = 11 | (2<<16);
-    myioctl(audio_fd, SNDCTL_DSP_SETFRAGMENT, &i);
-                    
-    myioctl(audio_fd, SNDCTL_DSP_RESET, 0);
-    i=11025;
-    myioctl(audio_fd, SNDCTL_DSP_SPEED, &i);
-    i=1;
-    myioctl(audio_fd, SNDCTL_DSP_STEREO, &i);
-            
-    myioctl(audio_fd, SNDCTL_DSP_GETFMTS, &i);
-    if (i&=AFMT_S16_LE)
-        myioctl(audio_fd, SNDCTL_DSP_SETFMT, &i);
-    else
-        fprintf(stderr, "Could not play signed 16 data\n");
-*/
 
     if ( SDL_Init( SDL_INIT_AUDIO ) < 0 )
     {
@@ -123,10 +81,6 @@ I_InitSound
     }
     //Mix_AllocateChannels( SOUND_CHANNELS );
     Mix_AllocateChannels( 16 );
-
-    //show_SDL_audio_status();
-    //SDL_PauseAudio(0);
-    //show_SDL_audio_status();
 
     // allocate and init audio chunks
     audio_mix_chunks = calloc ( number_of_sounds, sizeof( Mix_Chunk ) );
@@ -154,60 +108,6 @@ void I_LoadSound( int n, void *data, int length )
         }
 }
 
-
-/*
-void show_SDL_audio_status()
-{
-    SDL_audiostatus status = SDL_GetAudioStatus();
-    switch ( status ) {
-    case SDL_AUDIO_STOPPED:
-        printf ("SDL sound stopped\n");
-        break;
-    case SDL_AUDIO_PAUSED:
-        printf ("SDL sound paused\n");
-        break;
-    case SDL_AUDIO_PLAYING:
-        printf ("SDL sound playing\n");
-        break;
-    default:
-        printf ("SDL sound unknown\n");
-        break;
-    }
-
-Description
-typedef enum{
-  SDL_AUDIO_STOPPED,
-  SDL_AUDIO_PAUSED,
-  SDL_AUDIO_PLAYING
-  } SDL_audiostatus;
-
-}
-
-static Uint8  *audio_chunk;
-static Uint32  audio_len;
-static Uint8  *audio_pos;
-*/
-
-void
-I_SubmitOutputBuffer
-( void*	samples,
-  int	samplecount )
-{
-//    write(audio_fd, samples, samplecount*4);
-    /*
-    SDL_LockAudio();
-
-    audio_chunk = (Uint8 *)samples;
-    audio_pos = audio_chunk;
-    audio_len = samplecount * 4; // *4  as above ? 16bit stereo
-
-    SDL_UnlockAudio();
-
-    show_SDL_audio_status();
-*/
-    /* Let the callback function play the audio chunk */
-    //SDL_PauseAudio(0);
-}
 
 
 //******************************************************************************
