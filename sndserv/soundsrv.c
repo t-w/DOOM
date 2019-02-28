@@ -261,8 +261,25 @@ addsfx( int sfxid,
         int step,
         int seperation )
 {
-    I_SDL_Play_Sound( sfxid, volume );
+    // play these sound effects
+    //  only one at a time
+    if (    sfxid == sfx_sawup
+         || sfxid == sfx_sawidl
+         || sfxid == sfx_sawful
+         || sfxid == sfx_sawhit
+         || sfxid == sfx_stnmov
+         || sfxid == sfx_pistol )
+    {
+        I_Unique_Sound_Stop_Playing( sfx_sawup );
+        I_Unique_Sound_Stop_Playing( sfx_sawidl );
+        I_Unique_Sound_Stop_Playing( sfx_sawful );
+        I_Unique_Sound_Stop_Playing( sfx_sawhit );
+        I_Unique_Sound_Stop_Playing( sfx_stnmov );
+        I_Unique_Sound_Stop_Playing( sfx_pistol );
+    }
 
+    I_SDL_Play_Sound( sfxid, volume );
+    
     return 0;   // (returned value is a "handle" - not used)
 }
 

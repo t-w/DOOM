@@ -56,10 +56,11 @@ I_LoadSound( int n,
              void *data,
              int length );
 
+int
+I_Sound_Playing_on_Channel( int sound );
+
 void
-I_SubmitOutputBuffer
-( void*		samples,
-  int		samplecount );
+I_Unique_Sound_Stop_Playing( int sfxid );
 
 void I_ShutdownSound(void);
 void I_ShutdownMusic(void);

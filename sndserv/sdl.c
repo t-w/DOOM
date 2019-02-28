@@ -49,8 +49,13 @@ static const char rcsid[] = "$Id: linux.c,v 1.3 1997/01/26 07:45:01 b1 Exp $";
 
 #include "soundsrv.h"
 
+#define CHANNELS 16
+
 static int NUMSFX = 0;
 Mix_Chunk **audio_mix_chunks = NULL;
+
+// inf. about allocation of the channels (what is being played and where)
+static int *playing = NULL;
 
 
 void I_InitMusic(void)
@@ -80,7 +85,7 @@ I_InitSound
         exit(2);
     }
     //Mix_AllocateChannels( SOUND_CHANNELS );
-    Mix_AllocateChannels( 16 );
+    Mix_AllocateChannels( CHANNELS );
 
     // allocate and init audio chunks
     audio_mix_chunks = calloc ( number_of_sounds, sizeof( Mix_Chunk ) );
@@ -89,6 +94,10 @@ I_InitSound
     NUMSFX = number_of_sounds;
     for ( i = 0 ; i < number_of_sounds ; i++ )
         audio_mix_chunks[ number_of_sounds ] = NULL;
+
+    playing = calloc( CHANNELS, sizeof( int ) );
+    for ( i = 0; i < CHANNELS; i++ )
+        playing[ i ] = -1;
 
     return(0);
 }
@@ -117,7 +126,7 @@ void I_SDL_Channel_Done( int channel )
     // Mix_FreeChunk( sound_mixchunk[ channel ] );
     // sound_mixchunk[ channel ] = NULL;
     printf("Channel %d done\n", channel);
-    ;
+    playing[ channel ] = -1;
 }
 
 //******************************************************************************
@@ -138,11 +147,47 @@ int I_SDL_Play_Sound( int sound, int volume )
     if( channel == -1)
         return -1;
 
+    playing[ channel ] = sound;
+
     //Mix_VolumeChunk( audio_mix_chunks[ sound ], (int) volume * 128 / 100 );
     Mix_Volume( channel, (int) volume * 128 / 100 );
 
     return channel;
 }
+
+
+int I_Sound_Playing_on_Channel( int sound )
+{
+    int i = -1, channel = -1;
+
+    while ( ++i < CHANNELS )
+    {
+        if ( playing[ i ] == sound )
+        {
+            channel = i;
+            break;
+        }
+    }
+
+    return channel;
+}
+
+
+void I_Unique_Sound_Stop_Playing( int sfxid )
+{
+    int i = -1, channel = -1;
+
+    while ( ++i < CHANNELS )
+    {
+        if ( playing[ i ] == sfxid )
+        {
+            channel = i;
+            Mix_HaltChannel( i );
+            break;
+        }
+    }
+}
+
 
 //******************************************************************************
 // change_volume(...)
@@ -158,6 +203,7 @@ void I_SDL_Change_Volume(unsigned char vol, int sound)
     //for (i = 0 ; i < SOUND_CHANNELS; i++)
     //    Mix_VolumeChunk( sound_mixchunk[i], (int) vol * 128 / 100 );
 }
+
 
 void I_ShutdownSound(void)
 {
