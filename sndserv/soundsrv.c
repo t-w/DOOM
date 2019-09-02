@@ -128,7 +128,11 @@ int*		channelrightvol_lookup[8];
 // sfx id of the playing sound effect
 int		channelids[8];			
 
-int		snd_verbose=1;
+#ifdef DEBUG
+int		snd_verbose = 1;
+#else
+int		snd_verbose = 0;
+#endif
 
 int		steptable[256];
 
