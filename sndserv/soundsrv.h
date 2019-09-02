@@ -39,18 +39,31 @@
 #define MIXBUFFERSIZE	(SAMPLECOUNT*2*2)
 #define SPEED			11025
 
+//#define SOUND_CHANNELS 16
+
+// switch on debug output
+//#define DEBUG
 
 void I_InitMusic(void);
 
-void
+//void
+int
 I_InitSound
 ( int		samplerate,
-  int		samplesound );
+  int		samplesound,
+  int           number_of_sounds );
+
 
 void
-I_SubmitOutputBuffer
-( void*		samples,
-  int		samplecount );
+I_LoadSound( int n,
+             void *data,
+             int length );
+
+int
+I_Sound_Playing_on_Channel( int sound );
+
+void
+I_Unique_Sound_Stop_Playing( int sfxid );
 
 void I_ShutdownSound(void);
 void I_ShutdownMusic(void);

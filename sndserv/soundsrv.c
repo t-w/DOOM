@@ -36,7 +36,7 @@
 //-----------------------------------------------------------------------------
 
 
-static const char rcsid[] = "$Id: soundsrv.c,v 1.3 1997/01/29 22:40:44 b1 Exp $";
+//static const char rcsid[] = "$Id: soundsrv.c,v 1.3 1997/01/29 22:40:44 b1 Exp $";
 
 
 
@@ -128,7 +128,11 @@ int*		channelrightvol_lookup[8];
 // sfx id of the playing sound effect
 int		channelids[8];			
 
-int		snd_verbose=1;
+#ifdef DEBUG
+int		snd_verbose = 1;
+#else
+int		snd_verbose = 0;
+#endif
 
 int		steptable[256];
 
@@ -139,166 +143,6 @@ static void derror(char* msg)
     fprintf(stderr, "error: %s\n", msg);
     exit(-1);
 }
-
-int mix(void)
-{
-
-    register int		dl;
-    register int		dr;
-    register unsigned int	sample;
-    
-    signed short*		leftout;
-    signed short*		rightout;
-    signed short*		leftend;
-    
-    int				step;
-
-    leftout = mixbuffer;
-    rightout = mixbuffer+1;
-    step = 2;
-
-    leftend = mixbuffer + SAMPLECOUNT*step;
-
-    // mix into the mixing buffer
-    while (leftout != leftend)
-    {
-
-	dl = 0;
-	dr = 0;
-
-	if (channels[0])
-	{
-	    sample = *channels[0];
-	    dl += channelleftvol_lookup[0][sample];
-	    dr += channelrightvol_lookup[0][sample];
-	    channelstepremainder[0] += channelstep[0];
-	    channels[0] += channelstepremainder[0] >> 16;
-	    channelstepremainder[0] &= 65536-1;
-
-	    if (channels[0] >= channelsend[0])
-		channels[0] = 0;
-	}
-
-	if (channels[1])
-	{
-	    sample = *channels[1];
-	    dl += channelleftvol_lookup[1][sample];
-	    dr += channelrightvol_lookup[1][sample];
-	    channelstepremainder[1] += channelstep[1];
-	    channels[1] += channelstepremainder[1] >> 16;
-	    channelstepremainder[1] &= 65536-1;
-
-	    if (channels[1] >= channelsend[1])
-		channels[1] = 0;
-	}
-
-	if (channels[2])
-	{
-	    sample = *channels[2];
-	    dl += channelleftvol_lookup[2][sample];
-	    dr += channelrightvol_lookup[2][sample];
-	    channelstepremainder[2] += channelstep[2];
-	    channels[2] += channelstepremainder[2] >> 16;
-	    channelstepremainder[2] &= 65536-1;
-
-	    if (channels[2] >= channelsend[2])
-		channels[2] = 0;
-	}
-	
-	if (channels[3])
-	{
-	    sample = *channels[3];
-	    dl += channelleftvol_lookup[3][sample];
-	    dr += channelrightvol_lookup[3][sample];
-	    channelstepremainder[3] += channelstep[3];
-	    channels[3] += channelstepremainder[3] >> 16;
-	    channelstepremainder[3] &= 65536-1;
-
-	    if (channels[3] >= channelsend[3])
-		channels[3] = 0;
-	}
-	
-	if (channels[4])
-	{
-	    sample = *channels[4];
-	    dl += channelleftvol_lookup[4][sample];
-	    dr += channelrightvol_lookup[4][sample];
-	    channelstepremainder[4] += channelstep[4];
-	    channels[4] += channelstepremainder[4] >> 16;
-	    channelstepremainder[4] &= 65536-1;
-
-	    if (channels[4] >= channelsend[4])
-		channels[4] = 0;
-	}
-	
-	if (channels[5])
-	{
-	    sample = *channels[5];
-	    dl += channelleftvol_lookup[5][sample];
-	    dr += channelrightvol_lookup[5][sample];
-	    channelstepremainder[5] += channelstep[5];
-	    channels[5] += channelstepremainder[5] >> 16;
-	    channelstepremainder[5] &= 65536-1;
-
-	    if (channels[5] >= channelsend[5])
-		channels[5] = 0;
-	}
-	
-	if (channels[6])
-	{
-	    sample = *channels[6];
-	    dl += channelleftvol_lookup[6][sample];
-	    dr += channelrightvol_lookup[6][sample];
-	    channelstepremainder[6] += channelstep[6];
-	    channels[6] += channelstepremainder[6] >> 16;
-	    channelstepremainder[6] &= 65536-1;
-
-	    if (channels[6] >= channelsend[6])
-		channels[6] = 0;
-	}
-	if (channels[7])
-	{
-	    sample = *channels[7];
-	    dl += channelleftvol_lookup[7][sample];
-	    dr += channelrightvol_lookup[7][sample];
-	    channelstepremainder[7] += channelstep[7];
-	    channels[7] += channelstepremainder[7] >> 16;
-	    channelstepremainder[7] &= 65536-1;
-
-	    if (channels[7] >= channelsend[7])
-		channels[7] = 0;
-	}
-
-	// Has been char instead of short.
-	// if (dl > 127) *leftout = 127;
-	// else if (dl < -128) *leftout = -128;
-	// else *leftout = dl;
-
-	// if (dr > 127) *rightout = 127;
-	// else if (dr < -128) *rightout = -128;
-	// else *rightout = dr;
-	
-	if (dl > 0x7fff)
-	    *leftout = 0x7fff;
-	else if (dl < -0x8000)
-	    *leftout = -0x8000;
-	else
-	    *leftout = dl;
-
-	if (dr > 0x7fff)
-	    *rightout = 0x7fff;
-	else if (dr < -0x8000)
-	    *rightout = -0x8000;
-	else
-	    *rightout = dr;
-
-	leftout += step;
-	rightout += step;
-
-    }
-    return 1;
-}
-
 
 
 void
@@ -343,15 +187,15 @@ grabdata
     //	  derror("Please set $HOME to your home directory");
     //	sprintf(basedefault, "%s/.doomrc", home);
 
-
+/*
     for (i=1 ; i<c ; i++)
     {
-	if (!strcmp(v[i], "-quiet"))
-	{
-	    snd_verbose = 0;
-	}
+        if (!strcmp(v[i], "-quiet"))
+        {
+            snd_verbose = 0;
+        }
     }
-
+*/
     numsounds = NUMSFX;
     longsound = 0;
 
@@ -380,16 +224,20 @@ grabdata
     if (snd_verbose)
 	fprintf(stderr, "loading from [%s]\n", name);
 
-    for (i=1 ; i<NUMSFX ; i++)
+    for ( i = 1 ; i < NUMSFX ; i++ )
     {
-	if (!S_sfx[i].link)
+	if ( ! S_sfx[ i ].link )
 	{
-	    S_sfx[i].data = getsfx(S_sfx[i].name, &lengths[i]);
-	    if (longsound < lengths[i]) longsound = lengths[i];
+	    S_sfx[ i ].data = getsfx( S_sfx[ i ].name, &lengths[ i ] );
+	    if ( longsound < lengths[ i ] )
+                longsound = lengths[ i ];
 	} else {
-	    S_sfx[i].data = S_sfx[i].link->data;
-	    lengths[i] = lengths[(S_sfx[i].link - S_sfx)/sizeof(sfxinfo_t)];
+	    S_sfx[ i ].data = S_sfx[ i ].link->data;
+	    lengths[ i ]    = lengths[( S_sfx[ i ].link - S_sfx ) / sizeof( sfxinfo_t ) ];
 	}
+
+        I_LoadSound( i, S_sfx[ i ].data, lengths[ i ] );
+
 	// test only
 	//  {
 	//  int fd;
@@ -408,132 +256,37 @@ static struct timeval		last={0,0};
 
 static struct timezone		whocares;
 
-void updatesounds(void)
-{
 
-    mix();
-    I_SubmitOutputBuffer(mixbuffer, SAMPLECOUNT);
-
-}
+extern int I_SDL_Play_Sound( int sound, int volume );
 
 int
-addsfx
-( int		sfxid,
-  int		volume,
-  int		step,
-  int		seperation )
+addsfx( int sfxid,
+        int volume,
+        int step,
+        int seperation )
 {
-    static unsigned short	handlenums = 0;
- 
-    int		i;
-    int		rc = -1;
-    
-    int		oldest = mytime;
-    int		oldestnum = 0;
-    int		slot;
-    int		rightvol;
-    int		leftvol;
-
     // play these sound effects
     //  only one at a time
-    if ( sfxid == sfx_sawup
-	 || sfxid == sfx_sawidl
-	 || sfxid == sfx_sawful
-	 || sfxid == sfx_sawhit
-	 || sfxid == sfx_stnmov
-	 || sfxid == sfx_pistol )
+    if (    sfxid == sfx_sawup
+         || sfxid == sfx_sawidl
+         || sfxid == sfx_sawful
+         || sfxid == sfx_sawhit
+         || sfxid == sfx_stnmov
+         || sfxid == sfx_pistol )
     {
-	for (i=0 ; i<8 ; i++)
-	{
-	    if (channels[i] && channelids[i] == sfxid)
-	    {
-		channels[i] = 0;
-		break;
-	    }
-	}
+        I_Unique_Sound_Stop_Playing( sfx_sawup );
+        I_Unique_Sound_Stop_Playing( sfx_sawidl );
+        I_Unique_Sound_Stop_Playing( sfx_sawful );
+        I_Unique_Sound_Stop_Playing( sfx_sawhit );
+        I_Unique_Sound_Stop_Playing( sfx_stnmov );
+        I_Unique_Sound_Stop_Playing( sfx_pistol );
     }
 
-    for (i=0 ; i<8 && channels[i] ; i++)
-    {
-	if (channelstart[i] < oldest)
-	{
-	    oldestnum = i;
-	    oldest = channelstart[i];
-	}
-    }
-
-    if (i == 8)
-	slot = oldestnum;
-    else
-	slot = i;
-
-    channels[slot] = (unsigned char *) S_sfx[sfxid].data;
-    channelsend[slot] = channels[slot] + lengths[sfxid];
-
-    if (!handlenums)
-	handlenums = 100;
+    I_SDL_Play_Sound( sfxid, volume );
     
-    channelhandles[slot] = rc = handlenums++;
-    channelstep[slot] = step;
-    channelstepremainder[slot] = 0;
-    channelstart[slot] = mytime;
-
-    // (range: 1 - 256)
-    seperation += 1;
-
-    // (x^2 seperation)
-    leftvol =
-	volume - (volume*seperation*seperation)/(256*256);
-
-    seperation = seperation - 257;
-
-    // (x^2 seperation)
-    rightvol =
-	volume - (volume*seperation*seperation)/(256*256);	
-
-    // sanity check
-    if (rightvol < 0 || rightvol > 127)
-	derror("rightvol out of bounds");
-    
-    if (leftvol < 0 || leftvol > 127)
-	derror("leftvol out of bounds");
-    
-    // get the proper lookup table piece
-    //  for this volume level
-    channelleftvol_lookup[slot] = &vol_lookup[leftvol*256];
-    channelrightvol_lookup[slot] = &vol_lookup[rightvol*256];
-
-    channelids[slot] = sfxid;
-
-    return rc;
-
+    return 0;   // (returned value is a "handle" - not used)
 }
 
-
-void outputushort(int num)
-{
-
-    static unsigned char	buff[5] = { 0, 0, 0, 0, '\n' };
-    static char*		badbuff = "xxxx\n";
-
-    // outputs a 16-bit # in hex or "xxxx" if -1.
-    if (num < 0)
-    {
-	write(1, badbuff, 5);
-    }
-    else
-    {
-	buff[0] = num>>12;
-	buff[0] += buff[0] > 9 ? 'a'-10 : '0';
-	buff[1] = (num>>8) & 0xf;
-	buff[1] += buff[1] > 9 ? 'a'-10 : '0';
-	buff[2] = (num>>4) & 0xf;
-	buff[2] += buff[2] > 9 ? 'a'-10 : '0';
-	buff[3] = num & 0xf;
-	buff[3] += buff[3] > 9 ? 'a'-10 : '0';
-	write(1, buff, 5);
-    }
-}
 
 void initdata(void)
 {
@@ -608,16 +361,15 @@ main
     int		i;
     int		waitingtofinish=0;
 
+
+    I_InitSound(11025, 16, NUMSFX);
+    I_InitMusic();
+
     // get sound data
     grabdata(c, v);
 
     // init any data
-    initdata();		
-
-    I_InitSound(11025, 16);
-
-    I_InitMusic();
-
+    initdata();
     if (snd_verbose)
 	fprintf(stderr, "ready\n");
     
@@ -625,8 +377,8 @@ main
     FD_ZERO(&fdset);
     FD_SET(0, &fdset);
 
-    while (!done)
-    {
+    do
+    {   
 	mytime++;
 
 	if (!waitingtofinish)
@@ -648,6 +400,7 @@ main
 		    }
 		    else
 		    {
+                        int i;
 			if (snd_verbose)
 			    fprintf(stderr, "cmd: %c", commandbuf[0]);
 
@@ -663,29 +416,15 @@ main
 				fprintf(stderr, "%s\n", commandbuf);
 			    }
 
-			    commandbuf[0] -=
-				commandbuf[0]>='a' ? 'a'-10 : '0';
-			    commandbuf[1] -=
-				commandbuf[1]>='a' ? 'a'-10 : '0';
-			    commandbuf[2] -=
-				commandbuf[2]>='a' ? 'a'-10 : '0';
-			    commandbuf[3] -=
-				commandbuf[3]>='a' ? 'a'-10 : '0';
-			    commandbuf[4] -=
-				commandbuf[4]>='a' ? 'a'-10 : '0';
-			    commandbuf[5] -=
-				commandbuf[5]>='a' ? 'a'-10 : '0';
-			    commandbuf[6] -=
-				commandbuf[6]>='a' ? 'a'-10 : '0';
-			    commandbuf[7] -=
-				commandbuf[7]>='a' ? 'a'-10 : '0';
+                            for ( i = 0 ; i <= 7; i++ )
+                                commandbuf[ i ] -= commandbuf[ i ] >= 'a' ? 'a'-10 : '0';
 
 			    //	p<snd#><step><vol><sep>
-			    sndnum = (commandbuf[0]<<4) + commandbuf[1];
-			    step = (commandbuf[2]<<4) + commandbuf[3];
-			    step = steptable[step];
-			    vol = (commandbuf[4]<<4) + commandbuf[5];
-			    sep = (commandbuf[6]<<4) + commandbuf[7];
+			    sndnum = ( commandbuf[ 0 ] << 4 ) + commandbuf[ 1 ];
+			    step   = ( commandbuf[ 2 ] << 4 ) + commandbuf[ 3 ];
+			    step   = steptable[ step ];
+			    vol    = ( commandbuf[ 4 ] << 4 ) + commandbuf[ 5 ];
+			    sep    = ( commandbuf[ 6 ] << 4 ) + commandbuf[ 7 ];
 
 			    handle = addsfx(sndnum, vol, step, sep);
 			    // returns the handle
@@ -693,7 +432,7 @@ main
 			    break;
 			    
 			  case 'q':
-			    read(0, commandbuf, 1);
+                            read(0, commandbuf, 1);
 			    waitingtofinish = 1; rc = 0;
 			    break;
 			    
@@ -723,18 +462,19 @@ main
 		}
 	    } while (rc > 0);
 	}
+/*
+        updatesounds();
 
-	updatesounds();
-
-	if (waitingtofinish)
-	{
-	    for(i=0 ; i<8 && !channels[i] ; i++);
-	    
-	    if (i==8)
-		done=1;
-	}
-
-    }
+       if (waitingtofinish)
+       {
+           for(i=0 ; i<8 && !channels[i] ; i++);
+           
+           if (i==8)
+               done=1;
+       }
+*/
+    } while ( ! //done
+                waitingtofinish );
 
     quit();
     return 0;

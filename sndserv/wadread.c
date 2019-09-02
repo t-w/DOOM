@@ -35,7 +35,7 @@
 //-----------------------------------------------------------------------------
 
 
-static const char rcsid[] = "$Id: wadread.c,v 1.3 1997/01/30 19:54:23 b1 Exp $";
+//static const char rcsid[] = "$Id: wadread.c,v 1.3 1997/01/30 19:54:23 b1 Exp $";
 
 
 
@@ -224,33 +224,42 @@ loadlump
     }
 
     return lump;
-
 }
+
+#ifdef DEBUG
+//#pragma pack (1)
+typedef struct dmx {
+    unsigned char three;
+    unsigned short rate;
+    unsigned short size;
+} dmx_hdr;
+#endif
 
 void*
 getsfx
 ( char*		sfxname,
   int*		len )
 {
-
     unsigned char*	sfx;
-    unsigned char*	paddedsfx;
-    int			i;
     int			size;
-    int			paddedsize;
     char		name[20];
 
     sprintf(name, "ds%s", sfxname);
 
-    sfx = (unsigned char *) loadlump(name, &size);
+#ifdef DEBUG
+    printf("Reading %s\n", name);
+#endif
 
-    // pad the sound effect out to the mixing buffer size
-    paddedsize = ((size-8 + (SAMPLECOUNT-1)) / SAMPLECOUNT) * SAMPLECOUNT;
-    paddedsfx = (unsigned char *) realloc(sfx, paddedsize+8);
-    for (i=size ; i<paddedsize+8 ; i++)
-	paddedsfx[i] = 128;
+    sfx = (unsigned char *) loadlump( name, &size );
 
-    *len = paddedsize;
-    return (void *) (paddedsfx + 8);
+#ifdef DEBUG
+    printf("Done reading %s\n", name);
 
+    dmx_hdr *hdr;
+    if ( hdr = (dmx_hdr *) sfx )
+        printf("%d, %d, %d \n", hdr->three, hdr->rate, hdr->size);
+#endif
+
+    *len = size;
+    return (void *) (sfx);
 }
