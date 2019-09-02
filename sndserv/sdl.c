@@ -32,7 +32,7 @@
 //
 //-----------------------------------------------------------------------------
 
-static const char rcsid[] = "$Id: linux.c,v 1.3 1997/01/26 07:45:01 b1 Exp $";
+//static const char rcsid[] = "$Id: linux.c,v 1.3 1997/01/26 07:45:01 b1 Exp $";
 
 
 #include <stdlib.h>
