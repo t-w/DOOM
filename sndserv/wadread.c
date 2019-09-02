@@ -240,15 +240,12 @@ getsfx
 ( char*		sfxname,
   int*		len )
 {
-
     unsigned char*	sfx;
     int			size;
-    int			paddedsize;
     char		name[20];
 
-    dmx_hdr *hdr;
-
     sprintf(name, "ds%s", sfxname);
+
 #ifdef DEBUG
     printf("Reading %s\n", name);
 #endif
@@ -257,6 +254,8 @@ getsfx
 
 #ifdef DEBUG
     printf("Done reading %s\n", name);
+
+    dmx_hdr *hdr;
     if ( hdr = (dmx_hdr *) sfx )
         printf("%d, %d, %d \n", hdr->three, hdr->rate, hdr->size);
 #endif
