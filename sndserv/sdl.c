@@ -32,8 +32,6 @@
 //
 //-----------------------------------------------------------------------------
 
-//static const char rcsid[] = "$Id: linux.c,v 1.3 1997/01/26 07:45:01 b1 Exp $";
-
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -125,7 +123,9 @@ void I_SDL_Channel_Done( int channel )
 {
     // Mix_FreeChunk( sound_mixchunk[ channel ] );
     // sound_mixchunk[ channel ] = NULL;
+#ifdef DEBUG
     printf("Channel %d done\n", channel);
+#endif
     playing[ channel ] = -1;
 }
 
@@ -143,7 +143,9 @@ int I_SDL_Play_Sound( int sound, int volume )
 
     int channel = Mix_PlayChannel( -1, audio_mix_chunks[ sound ], 0 );
     Mix_ChannelFinished(I_SDL_Channel_Done);
+#ifdef DEBUG
     printf("Playing %d on channel %d with volume %d.\n", sound, channel, volume );
+#endif
     if( channel == -1)
         return -1;
 

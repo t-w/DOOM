@@ -41,6 +41,9 @@
 
 //#define SOUND_CHANNELS 16
 
+// switch on debug output
+#define DEBUG
+
 void I_InitMusic(void);
 
 //void
