@@ -74,6 +74,12 @@ char*	sndserver_filename = "./sndserver ";
 // Get the interrupt. Set duration in millisecs.
 int I_SoundSetTimer( int duration_of_tick );
 void I_SoundDelTimer( void );
+
+#elif SNDSDL
+#include <SDL/SDL.h>
+//#include <SDL/SDL_audio.h>
+#include <SDL/SDL_mixer.h>
+
 #else
 // None?
 #endif
@@ -152,7 +158,10 @@ int*		channelleftvol_lookup[NUM_CHANNELS];
 int*		channelrightvol_lookup[NUM_CHANNELS];
 
 
+Mix_Chunk **audio_mix_chunks = NULL;
 
+// inf. about allocation of the channels (what is being played and where)
+static int *playing = NULL;
 
 //
 // Safe ioctl, convenience.
@@ -253,7 +262,8 @@ getsfx
 
 
 
-
+int I_SDL_Play_Sound( int sound, int volume );
+void I_Unique_Sound_Stop_Playing( int sfxid );
 
 //
 // This function adds a sound to the
@@ -269,18 +279,6 @@ addsfx
   int		step,
   int		seperation )
 {
-    static unsigned short	handlenums = 0;
- 
-    int		i;
-    int		rc = -1;
-    
-    int		oldest = gametic;
-    int		oldestnum = 0;
-    int		slot;
-
-    int		rightvol;
-    int		leftvol;
-
     // Chainsaw troubles.
     // Play these sound effects only one at a time.
     if ( sfxid == sfx_sawup
@@ -290,95 +288,17 @@ addsfx
 	 || sfxid == sfx_stnmov
 	 || sfxid == sfx_pistol	 )
     {
-	// Loop all channels, check.
-	for (i=0 ; i<NUM_CHANNELS ; i++)
-	{
-	    // Active, and using the same SFX?
-	    if ( (channels[i])
-		 && (channelids[i] == sfxid) )
-	    {
-		// Reset.
-		channels[i] = 0;
-		// We are sure that iff,
-		//  there will only be one.
-		break;
-	    }
-	}
+        I_Unique_Sound_Stop_Playing( sfx_sawup );
+        I_Unique_Sound_Stop_Playing( sfx_sawidl );
+        I_Unique_Sound_Stop_Playing( sfx_sawful );
+        I_Unique_Sound_Stop_Playing( sfx_sawhit );
+        I_Unique_Sound_Stop_Playing( sfx_stnmov );
+        I_Unique_Sound_Stop_Playing( sfx_pistol );
     }
 
-    // Loop all channels to find oldest SFX.
-    for (i=0; (i<NUM_CHANNELS) && (channels[i]); i++)
-    {
-	if (channelstart[i] < oldest)
-	{
-	    oldestnum = i;
-	    oldest = channelstart[i];
-	}
-    }
+    I_SDL_Play_Sound( sfxid, volume );
 
-    // Tales from the cryptic.
-    // If we found a channel, fine.
-    // If not, we simply overwrite the first one, 0.
-    // Probably only happens at startup.
-    if (i == NUM_CHANNELS)
-	slot = oldestnum;
-    else
-	slot = i;
-
-    // Okay, in the less recent channel,
-    //  we will handle the new SFX.
-    // Set pointer to raw data.
-    channels[slot] = (unsigned char *) S_sfx[sfxid].data;
-    // Set pointer to end of raw data.
-    channelsend[slot] = channels[slot] + lengths[sfxid];
-
-    // Reset current handle number, limited to 0..100.
-    if (!handlenums)
-	handlenums = 100;
-
-    // Assign current handle number.
-    // Preserved so sounds could be stopped (unused).
-    channelhandles[slot] = rc = handlenums++;
-
-    // Set stepping???
-    // Kinda getting the impression this is never used.
-    channelstep[slot] = step;
-    // ???
-    channelstepremainder[slot] = 0;
-    // Should be gametic, I presume.
-    channelstart[slot] = gametic;
-
-    // Separation, that is, orientation/stereo.
-    //  range is: 1 - 256
-    seperation += 1;
-
-    // Per left/right channel.
-    //  x^2 seperation,
-    //  adjust volume properly.
-    leftvol =
-	volume - ((volume*seperation*seperation) >> 16); ///(256*256);
-    seperation = seperation - 257;
-    rightvol =
-	volume - ((volume*seperation*seperation) >> 16);	
-
-    // Sanity check, clamp volume.
-    if (rightvol < 0 || rightvol > 127)
-	I_Error("rightvol out of bounds");
-    
-    if (leftvol < 0 || leftvol > 127)
-	I_Error("leftvol out of bounds");
-    
-    // Get the proper lookup table piece
-    //  for this volume level???
-    channelleftvol_lookup[slot] = &vol_lookup[leftvol*256];
-    channelrightvol_lookup[slot] = &vol_lookup[rightvol*256];
-
-    // Preserve sound SFX id,
-    //  e.g. for avoiding duplicates of chainsaw.
-    channelids[slot] = sfxid;
-
-    // You tell me.
-    return rc;
+    return 0;
 }
 
 
@@ -718,114 +638,225 @@ void I_ShutdownSound(void)
     //if (i==8)
     done=1;
   }
-#ifdef SNDINTR
-  I_SoundDelTimer();
-#endif
-  
-  // Cleaning up -releasing the DSP device.
-  close ( audio_fd );
+
+    //close(audio_fd);
+
+    /* Wait for sound to complete */
+//    while ( audio_len > 0 ) {
+//        SDL_Delay(100);         /* Sleep 1/10 second */
+//    }
+//    SDL_CloseAudio();
+
+    Mix_CloseAudio();
+
+    for( i = 0 ; i < NUMSFX; i++ )
+    {
+        Mix_FreeChunk( audio_mix_chunks[i] );
+        audio_mix_chunks[i] = NULL;
+    }
+    free ( audio_mix_chunks );
 #endif
 
-  // Done.
-  return;
+    // Done.
+    return;
 }
 
+void I_LoadSound( int n, void *data, int length )
+{
+    // quick-load a raw sample from memory
+    // Uint8 *raw; // I assume you have the raw data here,
+                   // or compiled in the program...
+    //Mix_Chunk *raw_chunk;
 
-
-
-
+          //# https://doomwiki.org/wiki/Sound
+    if( ! ( audio_mix_chunks[ n ] = Mix_QuickLoad_RAW( data + 0x18,
+                                                       length - 0x18 ) ) )
+        {
+            printf( "Mix_QuickLoad_RAW: %s\n", Mix_GetError() );
+            // handle error
+        }
+}
 
 void
-I_InitSound()
+I_InitSound( /* int samplerate,
+             int samplesize,
+             int number_of_sounds */ )
 { 
 #ifdef SNDSERV
-  char buffer[256];
+    char buffer[256];
   
-  if (getenv("DOOMWADDIR"))
-    sprintf(buffer, "%s/%s",
-	    getenv("DOOMWADDIR"),
-	    sndserver_filename);
-  else
-    sprintf(buffer, "./%s", sndserver_filename);
+    if (getenv("DOOMWADDIR"))
+        sprintf(buffer, "%s/%s",
+                getenv("DOOMWADDIR"),
+                sndserver_filename);
+    else
+        sprintf(buffer, "./%s", sndserver_filename);
   
-  // start sound process
-  sndserver = NULL;
-  if ( !access(buffer, X_OK) )
-  {
-    strcat(buffer, " -quiet");
-    sndserver = popen(buffer, "w");
-  }
-  if (sndserver == NULL)
-    fprintf(stderr, "Could not start sound server [%s]\n", buffer);
+    // start sound process
+    sndserver = NULL;
+    if ( !access(buffer, X_OK) )
+    {
+        strcat(buffer, " -quiet");
+        sndserver = popen(buffer, "w");
+    }
+    if (sndserver == NULL)
+        fprintf(stderr, "Could not start sound server [%s]\n", buffer);
 
 #else
-    
-  int i;
+    int samplerate = SAMPLERATE;
+    int samplesize = SAMPLESIZE;
+    int number_of_sounds = NUMSFX;
   
-#ifdef SNDINTR
-  fprintf( stderr, "I_SoundSetTimer: %d microsecs\n", SOUND_INTERVAL );
-  I_SoundSetTimer( SOUND_INTERVAL );
-#endif
-    
-  // Secure and configure sound device first.
-  fprintf( stderr, "I_InitSound: ");
-  
-  audio_fd = open("/dev/dsp", O_WRONLY);
-  if (audio_fd<0)
-    fprintf(stderr, "Could not open /dev/dsp\n");
-  
-                     
-  i = 11 | (2<<16);                                           
-  myioctl(audio_fd, SNDCTL_DSP_SETFRAGMENT, &i);
-  myioctl(audio_fd, SNDCTL_DSP_RESET, 0);
-  
-  i=SAMPLERATE;
-  
-  myioctl(audio_fd, SNDCTL_DSP_SPEED, &i);
-  
-  i=1;
-  myioctl(audio_fd, SNDCTL_DSP_STEREO, &i);
-  
-  myioctl(audio_fd, SNDCTL_DSP_GETFMTS, &i);
-  
-  if (i&=AFMT_S16_LE)    
-    myioctl(audio_fd, SNDCTL_DSP_SETFMT, &i);
-  else
-    fprintf(stderr, "Could not play signed 16 data\n");
-
-  fprintf(stderr, " configured audio device\n" );
-
-    
-  // Initialize external data (all sounds) at start, keep static.
-  fprintf( stderr, "I_InitSound: ");
-  
-  for (i=1 ; i<NUMSFX ; i++)
-  { 
-    // Alias? Example is the chaingun sound linked to pistol.
-    if (!S_sfx[i].link)
+    if ( SDL_Init( SDL_INIT_AUDIO ) < 0 )
     {
-      // Load data from WAD file.
-      S_sfx[i].data = getsfx( S_sfx[i].name, &lengths[i] );
-    }	
-    else
-    {
-      // Previously loaded already?
-      S_sfx[i].data = S_sfx[i].link->data;
-      lengths[i] = lengths[(S_sfx[i].link - S_sfx)/sizeof(sfxinfo_t)];
+        fprintf(stderr, "Couldn't initialize SDL: %s\n", SDL_GetError());
+        return;// -1;
     }
-  }
 
-  fprintf( stderr, " pre-cached all sound data\n");
-  
-  // Now initialize mixbuffer with zero.
-  for ( i = 0; i< MIXBUFFERSIZE; i++ )
-    mixbuffer[i] = 0;
-  
-  // Finished initialization.
-  fprintf(stderr, "I_InitSound: sound module ready\n");
-    
+    //if ( Mix_OpenAudio( 44100, AUDIO_S16SYS, 2, 1024) == -1) {
+//        if ( Mix_OpenAudio( samplerate, AUDIO_S16SYS, 2, 1024) == -1) {
+    if ( Mix_OpenAudio( samplerate, AUDIO_U8, 1, 1024) == -1) {
+        printf ("Mix_OpenAudio: %s\n", Mix_GetError() );
+        exit(2);
+    }
+    //Mix_AllocateChannels( SOUND_CHANNELS );
+    Mix_AllocateChannels( NUM_CHANNELS );
+
+    // allocate and init audio chunks
+    audio_mix_chunks = calloc ( number_of_sounds, sizeof( Mix_Chunk ) );
+
+    int i;
+    //NUMSFX = number_of_sounds;
+    for ( i = 0 ; i < number_of_sounds ; i++ )
+        audio_mix_chunks[ number_of_sounds ] = NULL;
+
+    playing = calloc( NUM_CHANNELS, sizeof( int ) );
+    for ( i = 0; i < NUM_CHANNELS; i++ )
+        playing[ i ] = -1;
+
+
+    // Initialize external data (all sounds) at start, keep static.
+    fprintf( stderr, "I_InitSound: ");
+
+    for (i=1 ; i<NUMSFX ; i++)
+    {
+        // Alias? Example is the chaingun sound linked to pistol.
+        if (!S_sfx[i].link)
+        {
+            // Load data from WAD file.
+            S_sfx[i].data = getsfx( S_sfx[i].name, &lengths[i] );
+        }
+        else
+        {
+            // Previously loaded already?
+            S_sfx[i].data = S_sfx[i].link->data;
+            lengths[i] = lengths[(S_sfx[i].link - S_sfx)/sizeof(sfxinfo_t)];
+        }
+
+        I_LoadSound( i, S_sfx[ i ].data, lengths[ i ] );
+    }
+
+    fprintf( stderr, " pre-cached all sound data\n");
+
+    // Now initialize mixbuffer with zero.
+    for ( i = 0; i< MIXBUFFERSIZE; i++ )
+        mixbuffer[i] = 0;
+
+    // Finished initialization.
+    fprintf(stderr, "I_InitSound: sound module ready\n");
 #endif
 }
+
+
+//******************************************************************************
+// callback when channel finished playing a sample
+void I_SDL_Channel_Done( int channel )
+{
+    // Mix_FreeChunk( sound_mixchunk[ channel ] );
+    // sound_mixchunk[ channel ] = NULL;
+#ifdef DEBUG
+    printf("Channel %d done\n", channel);
+#endif
+    playing[ channel ] = -1;
+}
+
+//******************************************************************************
+// I_Play_Sound(...)
+//******************************************************************************
+int I_SDL_Play_Sound( int sound, int volume )
+{
+    if ( audio_mix_chunks[ sound ] == NULL )
+    {
+        printf("Sound %d not valid\n", sound );
+        // sound not valid(?)
+        return -1;
+    }
+
+    int channel = Mix_PlayChannel( -1, audio_mix_chunks[ sound ], 0 );
+    Mix_ChannelFinished(I_SDL_Channel_Done);
+#ifdef DEBUG
+    printf("Playing %d on channel %d with volume %d.\n", sound, channel, volume );
+#endif
+    if( channel == -1)
+        return -1;
+
+    playing[ channel ] = sound;
+
+    //Mix_VolumeChunk( audio_mix_chunks[ sound ], (int) volume * 128 / 100 );
+    Mix_Volume( channel, (int) volume * 128 / 100 );
+
+    return channel;
+}
+
+
+int I_Sound_Playing_on_Channel( int sound )
+{
+    int i = -1, channel = -1;
+
+    while ( ++i < NUM_CHANNELS )
+    {
+        if ( playing[ i ] == sound )
+        {
+            channel = i;
+            break;
+        }
+    }
+
+    return channel;
+}
+
+
+void I_Unique_Sound_Stop_Playing( int sfxid )
+{
+    int i = -1, channel = -1;
+
+    while ( ++i < NUM_CHANNELS )
+    {
+        if ( playing[ i ] == sfxid )
+        {
+            channel = i;
+            Mix_HaltChannel( i );
+            break;
+        }
+    }
+}
+
+
+//******************************************************************************
+// change_volume(...)
+//******************************************************************************
+void I_SDL_Change_Volume(unsigned char vol, int sound)
+{
+    //int i;
+
+    if ( sound >= 0 )
+        Mix_VolumeChunk( audio_mix_chunks[ sound ], (int) vol * 128 / 100 );
+
+    // Shouldn't we set all channels??? :
+    //for (i = 0 ; i < SOUND_CHANNELS; i++)
+    //    Mix_VolumeChunk( sound_mixchunk[i], (int) vol * 128 / 100 );
+}
+
 
 
 

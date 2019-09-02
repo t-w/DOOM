@@ -7,7 +7,7 @@
 CC=  gcc  # gcc or g++
 
 SDL_CFLAGS=`sdl-config --cflags`
-SDL_LIBS=`sdl-config --libs`
+SDL_LIBS=`sdl-config --libs` -lSDL_mixer
 
 CFLAGS=-m32 -g -Wall -DNORMALUNIX -DLINUX $(SDL_CFLAGS) # -DUSEASM
 #LDFLAGS=-L/usr/X11R6/lib
