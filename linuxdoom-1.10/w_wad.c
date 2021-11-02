@@ -141,7 +141,6 @@ void W_AddFile (char *filename)
 {
     wadinfo_t		header;
     lumpinfo_t*		lump_p;
-    unsigned		i;
     int			handle;
     int			length;
     int			startlump;
@@ -212,8 +211,7 @@ void W_AddFile (char *filename)
 	
     storehandle = reloadname ? -1 : handle;
 	
-    for (i=startlump ; i<numlumps ; i++,lump_p++, fileinfo++)
-    {
+    for ( int i = startlump ; i < numlumps ; i++, lump_p++, fileinfo++ ) {
 	lump_p->handle = storehandle;
 	lump_p->position = LONG(fileinfo->filepos);
 	lump_p->size = LONG(fileinfo->size);
@@ -237,7 +235,6 @@ void W_Reload (void)
     wadinfo_t		header;
     int			lumpcount;
     lumpinfo_t*		lump_p;
-    unsigned		i;
     int			handle;
     int			length;
     filelump_t*		fileinfo;
@@ -259,9 +256,9 @@ void W_Reload (void)
     // Fill in lumpinfo
     lump_p = &lumpinfo[reloadlump];
 	
-    for (i=reloadlump ;
-	 i<reloadlump+lumpcount ;
-	 i++,lump_p++, fileinfo++)
+    for ( int i = reloadlump ;
+          i < reloadlump + lumpcount ;
+          i++, lump_p++, fileinfo++ )
     {
 	if (lumpcache[i])
 	    Z_Free (lumpcache[i]);
@@ -478,7 +475,7 @@ W_CacheLumpNum
 {
     byte*	ptr;
 
-    if ((unsigned)lump >= numlumps)
+    if ( lump >= numlumps )
 	I_Error ("W_CacheLumpNum: %i >= numlumps",lump);
 		
     if (!lumpcache[lump])
