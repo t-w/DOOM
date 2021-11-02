@@ -200,7 +200,7 @@ void I_GetEvent(void)
         I_Quit();
 
     default:/* Report an unhandled event */
-        printf("Unimplemented event: %d\n", event.type);
+        printf ( "Unimplemented event: %d\n", sdl_event.type );
     }
 
     //printf("I_GetEvent(): leaving...\n");
