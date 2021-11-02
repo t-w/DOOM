@@ -60,20 +60,20 @@
 //
 
 
-byte*		viewimage; 
+static byte*	viewimage;
 int		viewwidth;
 int		scaledviewwidth;
 int		viewheight;
 int		viewwindowx;
 int		viewwindowy; 
-byte*		ylookup[MAXHEIGHT]; 
-int		columnofs[MAXWIDTH]; 
+static byte*	ylookup[MAXHEIGHT];
+static int	columnofs[MAXWIDTH];
 
 // Color tables for different players,
 //  translate a limited part to another
 //  (color ramps used for  suit colors).
 //
-byte		translations[3][256];	
+static byte	translations[3][256];
  
  
 
@@ -93,7 +93,7 @@ fixed_t			dc_texturemid;
 byte*			dc_source;		
 
 // just for profiling 
-int			dccount;
+static int			dccount;
 
 //
 // A column is a vertical slice/span from a wall texture that,
@@ -260,7 +260,7 @@ void R_DrawColumnLow (void)
 #define FUZZOFF	(SCREENWIDTH)
 
 
-int	fuzzoffset[FUZZTABLE] =
+static const int	fuzzoffset[FUZZTABLE] =
 {
     FUZZOFF,-FUZZOFF,FUZZOFF,-FUZZOFF,FUZZOFF,FUZZOFF,-FUZZOFF,
     FUZZOFF,FUZZOFF,-FUZZOFF,FUZZOFF,FUZZOFF,FUZZOFF,-FUZZOFF,
@@ -271,7 +271,7 @@ int	fuzzoffset[FUZZTABLE] =
     FUZZOFF,FUZZOFF,-FUZZOFF,FUZZOFF,FUZZOFF,-FUZZOFF,FUZZOFF 
 }; 
 
-int	fuzzpos = 0; 
+static int	fuzzpos = 0;
 
 
 //
@@ -737,12 +737,12 @@ void R_FillBackScreen (void)
     patch_t*	patch;
 
     // DOOM border patch.
-    char	name1[] = "FLOOR7_2";
+    const char	name1[] = "FLOOR7_2";
 
     // DOOM II border patch.
-    char	name2[] = "GRNROCK";	
+    const char	name2[] = "GRNROCK";
 
-    char*	name;
+    const char*	name;
 	
     if (scaledviewwidth == 320)
 	return;
