@@ -133,8 +133,8 @@ ExtractFileBase
 //  specially to allow map reloads.
 // But: the reload feature is a fragile hack...
 
-int			reloadlump;
-char*			reloadname;
+static int		reloadlump;
+static char*		reloadname;
 
 
 void W_AddFile (char *filename)
