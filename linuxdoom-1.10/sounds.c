@@ -33,7 +33,7 @@
 // Information about all the music
 //
 
-musicinfo_t S_music[] =
+const musicinfo_t S_music[] =
 {
     { 0 },
     { "e1m1", 0 },
