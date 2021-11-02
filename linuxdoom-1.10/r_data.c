@@ -91,7 +91,8 @@ typedef struct
     boolean		masked;	
     short		width;
     short		height;
-    void		**columndirectory;	// OBSOLETE
+//    void		**columndirectory;	// OBSOLETE
+    uint32_t            columndirectory;	// replaces a 32bit "pointer" (line above)
     short		patchcount;
     mappatch_t	patches[1];
 } maptexture_t;
