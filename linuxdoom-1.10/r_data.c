@@ -411,8 +411,6 @@ void R_InitTextures (void)
 {
     maptexture_t*	mtexture;
     texture_t*		texture;
-    mappatch_t*		mpatch;
-    texpatch_t*		patch;
 
     int			i;
     int			j;
@@ -445,10 +443,10 @@ void R_InitTextures (void)
     // Load the patch names from pnames.lmp.
     name[8] = 0;	
     names = W_CacheLumpName ("PNAMES", PU_STATIC);
-    nummappatches = LONG ( *((int *)names) );
+    nummappatches = LONG ( *((int32_t *)names) );
     name_p = names+4;
     patchlookup = alloca (nummappatches*sizeof(*patchlookup));
-    
+    printf ("nummappatches: %d\n", nummappatches );
     for (i=0 ; i<nummappatches ; i++)
     {
 	strncpy (name,name_p+i*8, 8);
@@ -499,9 +497,11 @@ void R_InitTextures (void)
     for (i = 0; i < temp3; i++)
 	printf("\x8");
     printf("\x8\x8\x8\x8\x8\x8\x8\x8\x8\x8");	
-	
+
+    printf ("numtextures: %d\n", numtextures );
     for (i=0 ; i<numtextures ; i++, directory++)
     {
+        printf ("Texture %d\n", i );
 	if (!(i&63))
 	    printf (".");
 
@@ -530,14 +530,18 @@ void R_InitTextures (void)
 	texture->patchcount = SHORT(mtexture->patchcount);
 
 	memcpy (texture->name, mtexture->name, sizeof(texture->name));
-	mpatch = &mtexture->patches[0];
-	patch = &texture->patches[0];
+	mappatch_t* mpatch = &mtexture->patches[0];
+	texpatch_t* patch = &texture->patches[0];
 
+        printf ("Patchcount: %d\n", texture->patchcount );
 	for (j=0 ; j<texture->patchcount ; j++, mpatch++, patch++)
 	{
+            printf ("%d ", j );
 	    patch->originx = SHORT(mpatch->originx);
 	    patch->originy = SHORT(mpatch->originy);
-	    patch->patch = patchlookup[SHORT(mpatch->patch)];
+            int idx = SHORT(mpatch->patch);
+            printf ("idx %d\n", idx );
+	    patch->patch = patchlookup [ idx ];
 	    if (patch->patch == -1)
 	    {
 		I_Error ("R_InitTextures: Missing patch in texture %s",
@@ -638,7 +642,7 @@ void R_InitColormaps (void)
     lump = W_GetNumForName("COLORMAP"); 
     length = W_LumpLength (lump) + 255; 
     colormaps = Z_Malloc (length, PU_STATIC, 0); 
-    colormaps = (byte *)( ((int)colormaps + 255)&~0xff); 
+    colormaps = (byte *)( ( (intptr_t) colormaps + 255 ) & ~ 0xff );
     W_ReadLump (lump,colormaps); 
 }
 

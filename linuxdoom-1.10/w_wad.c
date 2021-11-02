@@ -34,6 +34,7 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <alloca.h>
+#include <assert.h>
 #define O_BINARY		0
 #endif
 
@@ -133,15 +134,14 @@ ExtractFileBase
 //  specially to allow map reloads.
 // But: the reload feature is a fragile hack...
 
-int			reloadlump;
-char*			reloadname;
+static int			reloadlump;
+static char*			reloadname;
 
 
 void W_AddFile (char *filename)
 {
     wadinfo_t		header;
     lumpinfo_t*		lump_p;
-    unsigned		i;
     int			handle;
     int			length;
     int			startlump;
@@ -167,8 +167,8 @@ void W_AddFile (char *filename)
 
     printf (" adding %s\n",filename);
     startlump = numlumps;
-	
-    if (strcmpi (filename+strlen(filename)-3 , "wad" ) )
+
+    if (strcmpi (filename + strlen(filename)-3 , "wad" ) )
     {
 	// single lump file
 	fileinfo = &singleinfo;
@@ -180,6 +180,7 @@ void W_AddFile (char *filename)
     else 
     {
 	// WAD file
+        assert ( sizeof(header) == 12 );
 	read (handle, &header, sizeof(header));
 	if (strncmp(header.identification,"IWAD",4))
 	{
@@ -194,10 +195,14 @@ void W_AddFile (char *filename)
 	}
 	header.numlumps = LONG(header.numlumps);
 	header.infotableofs = LONG(header.infotableofs);
+        assert ( sizeof(filelump_t) == 16 );
 	length = header.numlumps*sizeof(filelump_t);
+        //printf ("%d %d %d\n", header.numlumps, header.infotableofs, length);
 	fileinfo = alloca (length);
 	lseek (handle, header.infotableofs, SEEK_SET);
-	read (handle, fileinfo, length);
+        ssize_t bytes = read (handle, fileinfo, length);
+        //printf ("Read bytes: %d\n", bytes );
+        assert ( bytes == length );
 	numlumps += header.numlumps;
     }
 
@@ -212,12 +217,12 @@ void W_AddFile (char *filename)
 	
     storehandle = reloadname ? -1 : handle;
 	
-    for (i=startlump ; i<numlumps ; i++,lump_p++, fileinfo++)
-    {
+    for ( int i = startlump ; i < numlumps ; i++, lump_p++, fileinfo++ ) {
 	lump_p->handle = storehandle;
 	lump_p->position = LONG(fileinfo->filepos);
 	lump_p->size = LONG(fileinfo->size);
 	strncpy (lump_p->name, fileinfo->name, 8);
+        //printf ("%s ", lump_p->name);
     }
 	
     if (reloadname)
@@ -237,7 +242,6 @@ void W_Reload (void)
     wadinfo_t		header;
     int			lumpcount;
     lumpinfo_t*		lump_p;
-    unsigned		i;
     int			handle;
     int			length;
     filelump_t*		fileinfo;
@@ -259,7 +263,7 @@ void W_Reload (void)
     // Fill in lumpinfo
     lump_p = &lumpinfo[reloadlump];
 	
-    for (i=reloadlump ;
+    for ( int i = reloadlump ;
 	 i<reloadlump+lumpcount ;
 	 i++,lump_p++, fileinfo++)
     {
@@ -351,12 +355,12 @@ int W_CheckNumForName (char* name)
 {
     union {
 	char	s[9];
-	int	x[2];
+	int32_t	x[2];
 	
     } name8;
     
-    int		v1;
-    int		v2;
+    int32_t	v1;
+    int32_t	v2;
     lumpinfo_t*	lump_p;
 
     // make the name into two integers for easy compares
@@ -377,8 +381,8 @@ int W_CheckNumForName (char* name)
 
     while (lump_p-- != lumpinfo)
     {
-	if ( *(int *)lump_p->name == v1
-	     && *(int *)&lump_p->name[4] == v2)
+	if ( *(int32_t *)lump_p->name == v1
+	     && *(int32_t *)&lump_p->name[4] == v2)
 	{
 	    return lump_p - lumpinfo;
 	}
@@ -478,7 +482,7 @@ W_CacheLumpNum
 {
     byte*	ptr;
 
-    if ((unsigned)lump >= numlumps)
+    if ( lump >= numlumps )
 	I_Error ("W_CacheLumpNum: %i >= numlumps",lump);
 		
     if (!lumpcache[lump])
