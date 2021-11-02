@@ -81,6 +81,11 @@ typedef struct
 // which are to be combined in a predefined order.
 //
 typedef struct
+#ifdef _WIN32
+    __pragma(pack(push, 1))
+#else
+    __attribute__((__packed__))
+#endif
 {
     char		name[8];
     boolean		masked;	
@@ -90,7 +95,9 @@ typedef struct
     short		patchcount;
     mappatch_t	patches[1];
 } maptexture_t;
-
+#ifdef _WIN32
+__pragma(pack(pop))
+#endif
 
 // A single patch from a texture definition,
 //  basically a rectangular area within
@@ -110,6 +117,11 @@ typedef struct
 //  which is composed of one or more mappatch_t structures
 //  that arrange graphic patches.
 typedef struct
+#ifdef _WIN32
+    __pragma(pack(push, 1))
+#else
+    __attribute__((__packed__))
+#endif
 {
     // Keep name for switch changing, etc.
     char	name[8];		
@@ -122,6 +134,9 @@ typedef struct
     texpatch_t	patches[1];		
     
 } texture_t;
+#ifdef _WIN32
+__pragma(pack(pop))
+#endif
 
 
 
