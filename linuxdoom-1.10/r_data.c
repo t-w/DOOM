@@ -175,6 +175,11 @@ fixed_t*	spritetopoffset;
 
 lighttable_t	*colormaps;
 
+//#define DEBUG_ARCH 1
+#ifdef DEBUG_ARCH
+#include <assert.h>
+static void check_structures();
+#endif
 
 //
 // MAPTEXTURE_T CACHING
@@ -456,7 +461,10 @@ void R_InitTextures (void)
     int			temp2;
     int			temp3;
 
-    
+#ifdef DEBUG_ARCH
+    check_structures();
+#endif
+
     // Load the patch names from pnames.lmp.
     name[8] = 0;	
     names = W_CacheLumpName ("PNAMES", PU_STATIC);
@@ -860,4 +868,23 @@ void R_PrecacheLevel (void)
 
 
 
+//
+// DEBUG and testing
+//
 
+#ifdef DEBUG_ARCH
+// check sizes/alignment of the data structures
+// (some of them may have to be packed)
+static void check_structures()
+{
+    assert ( sizeof( mappatch_t )   == 5 * 2);
+    printf ( "\nsizeof( maptexture_t ) %d, should be %d\n",
+             sizeof( maptexture_t ),
+             8 + 4 + 2*2 + 4 + 2 + 5 * 2 );
+    assert ( sizeof( maptexture_t ) == 8 + 4 + 2*2 + 4 + 2 + 5 * 2);
+    assert ( sizeof( texpatch_t )   == 3 * 4 );
+    printf ( "\nsizeof( texture_t ) %d, should be %d\n",
+             sizeof( texture_t ), 8 + 2 * 3 + 3 * 4 );
+    assert ( sizeof( texture_t )    == 8 + 2 * 3 + 3 * 4 );
+}
+#endif
