@@ -175,7 +175,8 @@ void I_GetEvent(void)
     event_t event;
 
     //printf("I_GetEvent(): Calling SDL_PollEvent()\n");
-    SDL_PollEvent(&sdl_event);
+    if ( ! SDL_PollEvent ( &sdl_event ) )
+        return;
 
     switch(sdl_event.type){  /* Process the appropiate event type */
     case SDL_KEYDOWN:
