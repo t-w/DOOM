@@ -90,7 +90,7 @@ typedef struct
 extern sfxinfo_t	S_sfx[];
 
 // the complete set of music
-extern const musicinfo_t S_music[];
+extern musicinfo_t	S_music[];
 
 //
 // Identifiers for all music in game.
