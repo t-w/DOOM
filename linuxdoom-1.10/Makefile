@@ -13,7 +13,9 @@ SDL_LIBS=`sdl-config --libs` -lSDL_mixer
 CFLAGS = -g -Wall -Wextra -pedantic -DNORMALUNIX -DLINUX $(SDL_CFLAGS) # -DUSEASM
 #LDFLAGS=-L/usr/X11R6/lib
 #LDFLAGS=-L/usr/lib/i386-linux-gnu
-LIBS = -lXext -lX11 -lnsl -lm $(SDL_LIBS)
+#LIBS = -lXext -lX11 -lnsl -lm $(SDL_LIBS)
+LIBS = -lXext -lX11 -lm $(SDL_LIBS)
+
 
 # subdirectory for objects
 O=linux
