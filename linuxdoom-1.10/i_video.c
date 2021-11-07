@@ -28,7 +28,11 @@
 #include <sys/ipc.h>
 #include <sys/shm.h>
 
+#ifdef __APPLE__
+#include <SDL.h>
+#else
 #include <SDL/SDL.h>
+#endif
 
 #include <stdarg.h>
 #include <sys/time.h>

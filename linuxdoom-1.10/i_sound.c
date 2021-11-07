@@ -40,8 +40,10 @@
 #include <unistd.h>
 #include <sys/ioctl.h>
 
+#if defined LINUX && !defined __APPLE__
 // Linux voxware output.
 #include <linux/soundcard.h>
+#endif
 
 // Timer stuff. Experimental.
 #include <time.h>
@@ -76,9 +78,16 @@ int I_SoundSetTimer( int duration_of_tick );
 void I_SoundDelTimer( void );
 
 #elif SNDSDL
+
+#ifdef __APPLE__
+#include <SDL.h>
+//#include <SDL/SDL_audio.h>
+#include <SDL_mixer.h>
+#else
 #include <SDL/SDL.h>
 //#include <SDL/SDL_audio.h>
 #include <SDL/SDL_mixer.h>
+#endif
 
 #else
 // None?
