@@ -44,6 +44,7 @@
 
 #include "doomstat.h"
 
+#include "i_cpuarch.h"
 
 void	P_SpawnMapThing (mapthing_t*	mthing);
 
@@ -531,8 +532,8 @@ void P_GroupLines (void)
 	}
     }
 	
-    // build line tables for each sector	
-    linebuffer = Z_Malloc (total*4, PU_LEVEL, 0);
+    // build line tables for each sector
+    linebuffer = Z_Malloc ( total * PTR_SIZE, PU_LEVEL, 0);
     sector = sectors;
     for (i=0 ; i<numsectors ; i++, sector++)
     {

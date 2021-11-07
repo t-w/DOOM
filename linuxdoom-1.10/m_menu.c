@@ -83,29 +83,29 @@ int			detailLevel;
 int			screenblocks;		// has default
 
 // temp for screenblocks (0-9)
-int			screenSize;		
+static int		screenSize;
 
 // -1 = no quicksave slot picked!
-int			quickSaveSlot;          
+static int		quickSaveSlot;
 
  // 1 = message to be printed
-int			messageToPrint;
+static int		messageToPrint;
 // ...and here is the message string!
-char*			messageString;		
+static char*		messageString;
 
 // message x & y
-int			messx;			
-int			messy;
-int			messageLastMenuActive;
+static int		messx;
+static int		messy;
+static int		messageLastMenuActive;
 
 // timed message = no input from user
-boolean			messageNeedsInput;     
+static boolean		messageNeedsInput;
 
-void    (*messageRoutine)(int response);
+static void    (*messageRoutine)(int response);
 
 #define SAVESTRINGSIZE 	24
 
-char gammamsg[5][26] =
+static const char gammamsg[5][26] =
 {
     GAMMALVL0,
     GAMMALVL1,
@@ -115,11 +115,11 @@ char gammamsg[5][26] =
 };
 
 // we are going to be entering a savegame string
-int			saveStringEnter;              
-int             	saveSlot;	// which slot to save in
-int			saveCharIndex;	// which char we're editing
+static int		saveStringEnter;
+static int            	saveSlot;	// which slot to save in
+static int		saveCharIndex;	// which char we're editing
 // old save description before edit
-char			saveOldString[SAVESTRINGSIZE];  
+static char		saveOldString[SAVESTRINGSIZE];
 
 boolean			inhelpscreens;
 boolean			menuactive;
@@ -128,9 +128,9 @@ boolean			menuactive;
 #define LINEHEIGHT		16
 
 extern boolean		sendpause;
-char			savegamestrings[10][SAVESTRINGSIZE];
+static char		savegamestrings[10][SAVESTRINGSIZE];
 
-char	endstring[160];
+static char	endstring[160];
 
 
 //
@@ -165,16 +165,16 @@ typedef struct menu_s
     short		lastOn;		// last item user was on in menu
 } menu_t;
 
-short		itemOn;			// menu item skull is on
-short		skullAnimCounter;	// skull animation counter
-short		whichSkull;		// which skull to draw
+static short		itemOn;			// menu item skull is on
+static short		skullAnimCounter;	// skull animation counter
+static short		whichSkull;		// which skull to draw
 
 // graphic name of skulls
 // warning: initializer-string for array of chars is too long
-char    skullName[2][/*8*/9] = {"M_SKULL1","M_SKULL2"};
+static const char    skullName[2][/*8*/9] = {"M_SKULL1","M_SKULL2"};
 
 // current menudef
-menu_t*	currentMenu;                          
+static menu_t*	currentMenu;
 
 //
 // PROTOTYPES
@@ -246,7 +246,7 @@ enum
     main_end
 } main_e;
 
-menuitem_t MainMenu[]=
+static menuitem_t MainMenu[]=
 {
     {1,"M_NGAME",M_NewGame,'n'},
     {1,"M_OPTION",M_Options,'o'},
@@ -257,7 +257,7 @@ menuitem_t MainMenu[]=
     {1,"M_QUITG",M_QuitDOOM,'q'}
 };
 
-menu_t  MainDef =
+static menu_t  MainDef =
 {
     main_end,
     NULL,
@@ -280,7 +280,7 @@ enum
     ep_end
 } episodes_e;
 
-menuitem_t EpisodeMenu[]=
+static const menuitem_t EpisodeMenu[]=
 {
     {1,"M_EPI1", M_Episode,'k'},
     {1,"M_EPI2", M_Episode,'t'},
@@ -288,7 +288,7 @@ menuitem_t EpisodeMenu[]=
     {1,"M_EPI4", M_Episode,'t'}
 };
 
-menu_t  EpiDef =
+static menu_t  EpiDef =
 {
     ep_end,		// # of menu items
     &MainDef,		// previous menu
@@ -311,7 +311,7 @@ enum
     newg_end
 } newgame_e;
 
-menuitem_t NewGameMenu[]=
+static const menuitem_t NewGameMenu[]=
 {
     {1,"M_JKILL",	M_ChooseSkill, 'i'},
     {1,"M_ROUGH",	M_ChooseSkill, 'h'},
@@ -348,7 +348,7 @@ enum
     opt_end
 } options_e;
 
-menuitem_t OptionsMenu[]=
+static const menuitem_t OptionsMenu[]=
 {
     {1,"M_ENDGAM",	M_EndGame,'e'},
     {1,"M_MESSG",	M_ChangeMessages,'m'},
@@ -379,12 +379,12 @@ enum
     read1_end
 } read_e;
 
-menuitem_t ReadMenu1[] =
+static menuitem_t ReadMenu1[] =
 {
     {1,"",M_ReadThis2,0}
 };
 
-menu_t  ReadDef1 =
+static menu_t  ReadDef1 =
 {
     read1_end,
     &MainDef,
@@ -400,12 +400,12 @@ enum
     read2_end
 } read_e2;
 
-menuitem_t ReadMenu2[]=
+static const menuitem_t ReadMenu2[]=
 {
     {1,"",M_FinishReadThis,0}
 };
 
-menu_t  ReadDef2 =
+static const menu_t  ReadDef2 =
 {
     read2_end,
     &ReadDef1,
@@ -427,7 +427,7 @@ enum
     sound_end
 } sound_e;
 
-menuitem_t SoundMenu[]=
+static const menuitem_t SoundMenu[]=
 {
     {2,"M_SFXVOL",M_SfxVol,'s'},
     {-1,"",0},
@@ -435,7 +435,7 @@ menuitem_t SoundMenu[]=
     {-1,"",0}
 };
 
-menu_t  SoundDef =
+static const menu_t  SoundDef =
 {
     sound_end,
     &OptionsDef,
@@ -459,7 +459,7 @@ enum
     load_end
 } load_e;
 
-menuitem_t LoadMenu[]=
+static menuitem_t LoadMenu[]=
 {
     {1,"", M_LoadSelect,'1'},
     {1,"", M_LoadSelect,'2'},
@@ -482,7 +482,7 @@ menu_t  LoadDef =
 //
 // SAVE GAME MENU
 //
-menuitem_t SaveMenu[]=
+static const menuitem_t SaveMenu[]=
 {
     {1,"", M_SaveSelect,'1'},
     {1,"", M_SaveSelect,'2'},
