@@ -737,7 +737,9 @@ void I_InitGraphics(void)
 
     if (fullscreen)
         SDL_ShowCursor(SDL_DISABLE);
-    
+
+    SDL_WM_SetCaption ( "Doom", NULL );
+
     // open the display
     /*X_display = XOpenDisplay(displayname);
     if (!X_display)
