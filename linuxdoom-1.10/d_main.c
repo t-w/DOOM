@@ -332,7 +332,8 @@ void D_Display (void)
     {
 	do
 	{
-	    nowtime = I_GetTime ();
+	    usleep ( 500 );
+	    nowtime = I_GetTime();
 	    tics = nowtime - wipestart;
 	} while (!tics);
 	wipestart = nowtime;

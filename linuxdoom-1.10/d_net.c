@@ -714,6 +714,7 @@ void TryRunTics (void)
     // wait for new tics if needed
     while (lowtic < gametic/ticdup + counts)	
     {
+	usleep ( 500 );
 	NetUpdate ();   
 	lowtic = MAXINT;
 	
