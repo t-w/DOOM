@@ -456,8 +456,10 @@ void CheckAbort (void)
     int		stoptic;
 	
     stoptic = I_GetTime () + 2; 
-    while (I_GetTime() < stoptic) 
-	I_StartTic (); 
+    while ( I_GetTime() < stoptic ) {
+        usleep(200);
+	I_StartTic ();
+    }
 	
     I_StartTic ();
     for ( ; eventtail != eventhead 
