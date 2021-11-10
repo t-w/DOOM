@@ -107,7 +107,7 @@ static int flag = 0;
 
 // Needed for calling the actual sound output.
 #define SAMPLECOUNT		512
-#define NUM_CHANNELS		8
+#define NUM_CHANNELS		20
 // It is 2 for 16bit, and 2 for two channels.
 #define BUFMUL                  4
 #define MIXBUFFERSIZE		(SAMPLECOUNT*BUFMUL)
@@ -806,8 +806,11 @@ int I_SDL_Play_Sound( int sound, int volume )
 #ifdef DEBUG
     printf("Playing %d on channel %d with volume %d.\n", sound, channel, volume );
 #endif
-    if( channel == -1)
+    if ( channel == -1 ) {
+        fprintf ( stderr, "Mix_PlayChannel error: %s\n",
+                  SDL_GetError() );
         return -1;
+    }
 
     playing[ channel ] = sound;
 
